@@ -1,0 +1,14 @@
+/.mvn/
+/.gradle/
+/.settings/
+/target/*
+/build/
+/target/
+/.openapi-generator/
+target/
+.vscode/
+.idea/
+generated/
+generated-code/
+*.iml #intellij module file
+feature-flag.iml
