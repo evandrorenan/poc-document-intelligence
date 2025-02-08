@@ -22,6 +22,7 @@ import java.util.Map;
 public class AzureDocumentAnalyzer implements DocumentAnalyzerPort {
 
     private static final Logger log = LoggerFactory.getLogger(AzureDocumentAnalyzer.class);
+    public static final String MODEL_ID = "prebuilt-layout";
     private final DocumentIntelligenceClient client;
 
     public AzureDocumentAnalyzer(
@@ -47,8 +48,9 @@ public class AzureDocumentAnalyzer implements DocumentAnalyzerPort {
             AnalyzeDocumentOptions options = new AnalyzeDocumentOptions(BinaryData.fromBytes(documentBytes));
 
             log.info("Sending document to Azure for analysis");
-            var result = client.beginAnalyzeDocument("prebuilt-document", options)
+            var result = client.beginAnalyzeDocument(MODEL_ID, options)
                     .getFinalResult();
+
             log.info("Document analysis completed successfully");
 
             log.debug("Extracting key-value pairs from analysis result");
