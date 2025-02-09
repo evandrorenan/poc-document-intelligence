@@ -3,8 +3,9 @@ package com.example.documentintelligence.application;
 import com.example.documentintelligence.domain.model.AnalysisStatus;
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
 import com.example.documentintelligence.domain.model.DocumentType;
-import com.example.documentintelligence.domain.port.DocumentAnalyzerPort;
 import com.example.documentintelligence.domain.port.DocumentRepositoryPort;
+import com.example.documentintelligence.domain.workflow.DocumentProcessingState;
+import com.example.documentintelligence.infrastructure.adapter.DocumentAnalyzer;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,6 +13,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.UUID;
 
 @Service
@@ -19,7 +21,7 @@ import java.util.UUID;
 public class DocumentService {
     private static final Logger log = LoggerFactory.getLogger(DocumentService.class);
     
-    private final DocumentAnalyzerPort documentAnalyzer;
+    private final DocumentAnalyzer documentAnalyzer;
     private final DocumentRepositoryPort documentRepository;
 
     public String submitDocument(String base64Document, DocumentType documentType) {
@@ -30,43 +32,53 @@ public class DocumentService {
         DocumentAnalysis pendingAnalysis = DocumentAnalysis.builder()
                 .protocol(protocol)
                 .documentType(documentType)
+                .valid(true)
+                .base64Document(base64Document)
+                .extractedData(new HashMap<>())
+                .stepResults(new HashMap<>())
+                .currentState(DocumentProcessingState.getInitialState())
                 .status(AnalysisStatus.PENDING)
                 .analysisDate(LocalDateTime.now())
                 .build();
-        
+
         log.debug("Saving initial pending analysis record");
         documentRepository.save(pendingAnalysis);
         
         // Start async processing
         log.info("Starting async document processing for protocol: {}", protocol);
-        processDocumentAsync(base64Document, documentType, protocol);
+        processDocumentAsync(pendingAnalysis);
         
         log.debug("Returning protocol to client: {}", protocol);
         return protocol;
     }
 
     @Async("documentAnalysisExecutor")
-    protected void processDocumentAsync(String base64Document, DocumentType documentType, String protocol) {
-        log.info("Starting async document analysis. Protocol: {}, Type: {}", protocol, documentType);
+    protected void processDocumentAsync(DocumentAnalysis documentAnalysis) {
+        log.info("Starting async document analysis. Protocol: {}, Type: {}",
+                documentAnalysis.getProtocol(),
+                documentAnalysis.getDocumentType());
+
         try {
             log.debug("Calling document analyzer service");
-            DocumentAnalysis analysis = documentAnalyzer.analyzeDocument(base64Document, documentType);
+            DocumentAnalysis analysis = documentAnalyzer.analyzeDocument(documentAnalysis);
             
             log.debug("Updating analysis with protocol and status");
-            analysis.setProtocol(protocol);
+            analysis.setAnalysisDate(LocalDateTime.now());
             analysis.setStatus(AnalysisStatus.COMPLETED);
             
             log.debug("Saving completed analysis result");
             documentRepository.save(analysis);
-            log.info("Document analysis completed successfully. Protocol: {}, Valid: {}", protocol, analysis.isValid());
+            log.info("Document analysis completed successfully. Protocol: {}, Valid: {}",
+                    analysis.getProtocol(),
+                    analysis.isValid());
             
         } catch (Exception e) {
             log.error("Error processing document. Protocol: {}, Type: {}, Error: {}", 
-                    protocol, documentType, e.getMessage(), e);
+                    documentAnalysis.getProtocol(), documentAnalysis.getDocumentType(), e.getMessage(), e);
             
             DocumentAnalysis failedAnalysis = DocumentAnalysis.builder()
-                    .protocol(protocol)
-                    .documentType(documentType)
+                    .protocol(documentAnalysis.getProtocol())
+                    .documentType(documentAnalysis.getDocumentType())
                     .status(AnalysisStatus.FAILED)
                     .errorMessage(e.getMessage())
                     .analysisDate(LocalDateTime.now())

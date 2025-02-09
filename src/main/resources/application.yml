@@ -9,6 +9,11 @@ azure:
   document-intelligence:
     endpoint: ${AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT}
     key: ${AZURE_DOCUMENT_INTELLIGENCE_KEY}
+  openai:
+    endpoint: ${AZURE_OPENAI_ENDPOINT}
+    key: ${AZURE_OPENAI_KEY}
+    deployment-id: ${AZURE_OPENAI_DEPLOYMENT_ID}
+    context: ${AZURE_OPENAI_PROMPT}
 
 management:
   endpoints:
