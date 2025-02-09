@@ -13,7 +13,22 @@ azure:
     endpoint: ${AZURE_OPENAI_ENDPOINT}
     key: ${AZURE_OPENAI_KEY}
     deployment-id: ${AZURE_OPENAI_DEPLOYMENT_ID}
-    context: ${AZURE_OPENAI_PROMPT}
+    context: ${AZURE_OPENAI_CONTEXT}
+#     Você é um assistente de IA responsável por extrair informações em documentos.
+    prompt: ${AZURE_OPENAI_PROMPT}
+#      Avalie o seguinte conteúdo e extraia as seguintes informações específicas em formato JSON,
+#      garantindo que os nomes dos campos sejam interpretados como caminhos para a criação de objetos aninhados:
+#
+#      %s
+#
+#      Conteúdo a ser avaliado:
+#
+#      %s
+#
+#      Observações importantes:
+#      * Os nomes dos campos no JSON de retorno devem ser interpretados como caminhos para a criação de objetos aninhados.
+#      * Se alguma das informações solicitadas não for encontrada no texto JSON, o campo correspondente no JSON de retorno deve conter o valor "null".
+#      * O texto JSON de entrada pode conter outras informações além das solicitadas. Ignore essas informações adicionais.}
 
 management:
   endpoints:

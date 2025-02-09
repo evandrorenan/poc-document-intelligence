@@ -19,7 +19,7 @@ public class DocumentIntelligenceConfig {
     private String key;
 
     @Bean
-    public DocumentIntelligenceClient openAIClient() {
+    public DocumentIntelligenceClient documentIntelligenceClient() {
         log.info("Initializing Azure Document Intelligence client with endpoint: {}", endpoint);
         var client = new DocumentIntelligenceClientBuilder()
                 .endpoint(endpoint)

@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -23,22 +24,20 @@ import static com.example.documentintelligence.domain.workflow.AnalyzerQualifier
 public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
     private final OpenAIClient client;
     private final String deploymentOrModelId;
+    private final String azureOpenAIContext;
     private final String azureOpenAIPrompt;
 
-    private final ObjectMapper mapper;
-
-    private final String azureOpenAIContext;
+    private final ObjectMapper mapper = new ObjectMapper();
 
     @Autowired
     public AzureOpenAIAnalyzer(OpenAIClient client,
-                               String deploymentOrModelId,
-                               String azureOpenAIContext,
-                               String azureOpenAIPrompt) {
+                               @Value("azure.openai.deployment-id") String deploymentOrModelId,
+                               @Value("azure.openai.context") String azureOpenAIContext,
+                               @Value("azure.openai.prompt") String azureOpenAIPrompt) {
         this.client = client;
         this.deploymentOrModelId = deploymentOrModelId;
         this.azureOpenAIContext = azureOpenAIContext;
         this.azureOpenAIPrompt = azureOpenAIPrompt;
-        this.mapper = new ObjectMapper();
     }
 
     @Override

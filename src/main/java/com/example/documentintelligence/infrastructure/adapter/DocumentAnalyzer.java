@@ -37,7 +37,7 @@ public class DocumentAnalyzer {
                     documentAnalysis.getProtocol(), documentAnalysis.getDocumentType());
             
             DocumentAnalysis analysis = documentAnalysis;
-            while (analysis.getCurrentState() != null && analysis.getStatus() != AnalysisStatus.ERROR) {
+            while (analysis.getCurrentState() != null && analysis.getStatus() != AnalysisStatus.FAILED) {
                 analysis = executeAnalysisStep(analysis);
             }
             
@@ -47,7 +47,7 @@ public class DocumentAnalyzer {
             
         } catch (Exception e) {
             log.error("Error during document analysis for protocol: {}", documentAnalysis.getProtocol(), e);
-            return documentAnalysis.updateStatus(AnalysisStatus.ERROR, 
+            return documentAnalysis.updateStatus(AnalysisStatus.FAILED,
                     "Unexpected error during analysis: " + e.getMessage());
         }
     }
@@ -63,7 +63,7 @@ public class DocumentAnalyzer {
             DocumentAnalyzerPort analyzer = getAnalyzer(analysis.getCurrentState());
             DocumentAnalysis updatedAnalysis = analyzer.analyzeDocument(analysis);
             
-            if (updatedAnalysis.getStatus() != AnalysisStatus.ERROR) {
+            if (updatedAnalysis.getStatus() != AnalysisStatus.FAILED) {
                 updatedAnalysis.setCurrentState(getNextState(updatedAnalysis.getCurrentState()));
             }
             
@@ -71,7 +71,7 @@ public class DocumentAnalyzer {
             
         } catch (Exception e) {
             log.error("Error in analysis step: {}", analysis.getCurrentState(), e);
-            return analysis.updateStatus(AnalysisStatus.ERROR, 
+            return analysis.updateStatus(AnalysisStatus.FAILED,
                     "Error in " + analysis.getCurrentState() + ": " + e.getMessage());
         }
     }
