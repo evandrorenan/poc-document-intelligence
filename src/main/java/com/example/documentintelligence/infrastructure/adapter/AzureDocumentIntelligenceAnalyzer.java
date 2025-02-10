@@ -47,42 +47,10 @@ public class AzureDocumentIntelligenceAnalyzer implements DocumentAnalyzerPort {
         var result = client.beginAnalyzeDocument(MODEL_ID, options)
                            .getFinalResult();
 
-        currentAnalysis.getStepResults().put(AZURE_DOCUMENT_INTELLIGENCE_ANALYZER, result);
+        currentAnalysis.getStepResults().put(AZURE_DOCUMENT_INTELLIGENCE_ANALYZER, result.getContent());
 
         log.info("Document analysis completed successfully");
 
         return currentAnalysis;
-    }
-
-    private boolean validateDocument(Map<String, String> extractedData, DocumentType documentType) {
-        log.debug("Validating document of type: {}", documentType);
-        boolean isValid = switch (documentType) {
-            case RG -> validateRG(extractedData);
-            case CPF -> validateCPF(extractedData);
-            case COMPROVANTE_RESIDENCIA -> validateComprovanteResidencia(extractedData);
-            case REGISTRO_MATRICULA, APOLICE_SEGURO -> validateGenericDocument(extractedData);
-        };
-        log.debug("Document validation result for type {}: {}", documentType, isValid);
-        return isValid;
-    }
-
-    private boolean validateRG(Map<String, String> data) {
-        log.debug("Validating RG document. Required fields: [Número RG, Nome, Data de Nascimento]");
-        return data.containsKey("Número RG") && data.containsKey("Nome") && data.containsKey("Data de Nascimento");
-    }
-
-    private boolean validateCPF(Map<String, String> data) {
-        log.debug("Validating CPF document. Required fields: [Número CPF, Nome]");
-        return data.containsKey("Número CPF") && data.containsKey("Nome");
-    }
-
-    private boolean validateComprovanteResidencia(Map<String, String> data) {
-        log.debug("Validating Comprovante de Residência. Required fields: [Endereço, CEP, Data]");
-        return data.containsKey("Endereço") && data.containsKey("CEP") && data.containsKey("Data");
-    }
-
-    private boolean validateGenericDocument(Map<String, String> data) {
-        log.debug("Validating generic document. Requirement: at least one field extracted");
-        return !data.isEmpty();
     }
 }

@@ -29,6 +29,8 @@ azure:
 #      * Os nomes dos campos no JSON de retorno devem ser interpretados como caminhos para a criação de objetos aninhados.
 #      * Se alguma das informações solicitadas não for encontrada no texto JSON, o campo correspondente no JSON de retorno deve conter o valor "null".
 #      * O texto JSON de entrada pode conter outras informações além das solicitadas. Ignore essas informações adicionais.}
+#      * A resposta deve conter somente o json com as informações solicitadas. Sem nenhum comentário adicional. Deve iniciar com "{" e terminar com "}"
+#      * O conteúdo pode mencionar antigos proprietários responsáveis pela venda dos proprietários atuais, ignore-os e retorne somente os proprietários atuais.
 
 management:
   endpoints:

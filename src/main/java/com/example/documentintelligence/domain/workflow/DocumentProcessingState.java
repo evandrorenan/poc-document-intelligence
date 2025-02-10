@@ -20,6 +20,10 @@ public enum DocumentProcessingState {
         return DocumentProcessingState.AZURE_DOCUMENT_INTELLIGENCE;
     }
 
+    public static DocumentProcessingState getLastState()  {
+        return DocumentProcessingState.AZURE_OPENAI;
+    }
+
     public DocumentProcessingState nextState() {
         return switch (this) {
             case AZURE_DOCUMENT_INTELLIGENCE -> AZURE_OPENAI;

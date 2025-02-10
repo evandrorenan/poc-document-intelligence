@@ -31,9 +31,9 @@ public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
 
     @Autowired
     public AzureOpenAIAnalyzer(OpenAIClient client,
-                               @Value("azure.openai.deployment-id") String deploymentOrModelId,
-                               @Value("azure.openai.context") String azureOpenAIContext,
-                               @Value("azure.openai.prompt") String azureOpenAIPrompt) {
+                               @Value("${azure.openai.deployment-id}") String deploymentOrModelId,
+                               @Value("${azure.openai.context}") String azureOpenAIContext,
+                               @Value("${azure.openai.prompt}") String azureOpenAIPrompt) {
         this.client = client;
         this.deploymentOrModelId = deploymentOrModelId;
         this.azureOpenAIContext = azureOpenAIContext;
@@ -45,7 +45,7 @@ public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
         try {
 
             String fieldList = String.join("\n", currentAnalysis.getDocumentType().getFields());
-            String content = String.join("\n" + currentAnalysis.getStepResults().values());
+            String content = String.join("\n", currentAnalysis.getStepResults().values().toString());
 
             String formattedPrompt = String.format(azureOpenAIPrompt, fieldList, content);
 
@@ -58,7 +58,9 @@ public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
                 new ChatCompletionsOptions(messages)
             );
 
-            String response = completions.getChoices().get(0).getMessage().getContent();
+            String response = completions.getChoices().get(0).getMessage().getContent()
+                                 .replace("```json", "")
+                                 .replace("```", "");
             if (!isValidJson(response)) return currentAnalysis;
 
             currentAnalysis.getStepResults().put(AZURE_OPENAI_ANALYZER, response);

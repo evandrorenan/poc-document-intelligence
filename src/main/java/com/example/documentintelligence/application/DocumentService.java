@@ -34,7 +34,6 @@ public class DocumentService {
                 .documentType(documentType)
                 .valid(true)
                 .base64Document(base64Document)
-                .extractedData(new HashMap<>())
                 .stepResults(new HashMap<>())
                 .currentState(DocumentProcessingState.getInitialState())
                 .status(AnalysisStatus.PENDING)
@@ -62,7 +61,8 @@ public class DocumentService {
             log.debug("Calling document analyzer service");
             DocumentAnalysis analysis = documentAnalyzer.analyzeDocument(documentAnalysis);
             
-            log.debug("Updating analysis with protocol and status");
+            log.debug("Updating analysis with status complete and datetime");
+            analysis.setExtractedData(analysis.getStepResults().get(DocumentProcessingState.getLastState().getQualifierName()));
             analysis.setAnalysisDate(LocalDateTime.now());
             analysis.setStatus(AnalysisStatus.COMPLETED);
             

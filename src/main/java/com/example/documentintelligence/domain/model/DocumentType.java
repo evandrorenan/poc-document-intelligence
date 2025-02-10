@@ -18,15 +18,15 @@ public enum DocumentType {
     CPF(List.of("NOME", "NUMERO_CPF")),
     COMPROVANTE_RESIDENCIA(List.of("NOME", "ENDERECO")),
     REGISTRO_MATRICULA(List.of(
-            "NOME_PROPRIETARIO",
-            "AREA_IMOVEL",
-            "ENDERECO_IMOVEL",
-            "BAIRRO",
-            "CIDADE",
-            "ESTADO",
-            "AREA_IMOVEL",
-            "DATA_MATRICULA",
-            "VALOR_COMPRA")),
+            "propriedadeUrbana.proprietarios[*].nome",
+            "propriedadeUrbana.area",
+            "propriedadeUrbana.logradouro",
+            "propriedadeUrbana.bairro",
+            "propriedadeUrbana.cidade",
+            "propriedadeUrbana.uf",
+            "propriedadeUrbana.dataMatricula",
+            "propriedadeUrbana.numeroMatricula",
+            "propriedadeUrbana.valorVenda")),
     APOLICE_SEGURO ( List.of("NOME"));
 
     private final List<String> fields;

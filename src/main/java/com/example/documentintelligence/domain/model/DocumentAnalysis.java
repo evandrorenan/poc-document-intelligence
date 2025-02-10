@@ -30,8 +30,7 @@ public class DocumentAnalysis {
     @NotBlank(message = "Document content is required")
     private String base64Document;
     
-    @Builder.Default
-    private Map<String, String> extractedData = new HashMap<>();
+    private Object extractedData;
     
     @Builder.Default
     private Map<String, Object> stepResults = new HashMap<>();
@@ -47,31 +46,6 @@ public class DocumentAnalysis {
     private AnalysisStatus status = AnalysisStatus.PENDING;
     
     private String errorMessage;
-
-    /**
-     * Adds extracted data to the analysis results.
-     * @param newData Map of field names to extracted values
-     * @return this instance for method chaining
-     */
-    public DocumentAnalysis addExtractedData(Map<String, String> newData) {
-        if (newData != null) {
-            this.extractedData.putAll(newData);
-        }
-        return this;
-    }
-
-    /**
-     * Records the result of a processing step.
-     * @param stepName Name of the processing step
-     * @param result Result object from the step
-     * @return this instance for method chaining
-     */
-    public DocumentAnalysis addStepResult(String stepName, Object result) {
-        if (stepName != null) {
-            this.stepResults.put(stepName, result);
-        }
-        return this;
-    }
 
     /**
      * Updates the analysis status and optionally sets an error message.
