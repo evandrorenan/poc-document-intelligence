@@ -35,51 +35,23 @@ public class AzureDocumentIntelligenceAnalyzer implements DocumentAnalyzerPort {
     public DocumentAnalysis analyzeDocument(DocumentAnalysis currentAnalysis) {
 
         log.info("Starting document analysis for type: {}", currentAnalysis.getDocumentType());
-        try {
-            log.debug("Decoding base64 document");
-            byte[] documentBytes = Base64.getDecoder().decode(currentAnalysis.getBase64Document());
-            log.debug("Document decoded, size: {} bytes", documentBytes.length);
 
-            log.debug("Creating analyze options with prebuilt-document model");
-            AnalyzeDocumentOptions options = new AnalyzeDocumentOptions(BinaryData.fromBytes(documentBytes));
+        log.debug("Decoding base64 document");
+        byte[] documentBytes = Base64.getDecoder().decode(currentAnalysis.getBase64Document());
+        log.debug("Document decoded, size: {} bytes", documentBytes.length);
 
-            log.info("Sending document to Azure for analysis");
-            var result = client.beginAnalyzeDocument(MODEL_ID, options)
-                               .getFinalResult();
+        log.debug("Creating analyze options with prebuilt-document model");
+        AnalyzeDocumentOptions options = new AnalyzeDocumentOptions(BinaryData.fromBytes(documentBytes));
 
-            currentAnalysis.getStepResults().put(AZURE_DOCUMENT_INTELLIGENCE_ANALYZER, result);
+        log.info("Sending document to Azure for analysis");
+        var result = client.beginAnalyzeDocument(MODEL_ID, options)
+                           .getFinalResult();
 
-            log.info("Document analysis completed successfully");
+        currentAnalysis.getStepResults().put(AZURE_DOCUMENT_INTELLIGENCE_ANALYZER, result);
 
-            log.debug("Extracting key-value pairs from analysis result");
-            Map<String, String> extractedData = new HashMap<>();
-            result.getKeyValuePairs().forEach(kvp -> {
-                if (kvp.getKey() != null && kvp.getValue() != null) {
-                    String key = kvp.getKey().getContent();
-                    String value = kvp.getValue().getContent();
-                    log.trace("Extracted key-value pair: {} = {}", key, value);
-                    extractedData.put(key, value);
-                }
-            });
-            log.debug("Extracted {} key-value pairs", extractedData.size());
+        log.info("Document analysis completed successfully");
 
-            log.debug("Validating document data");
-            boolean isValid = validateDocument(extractedData, currentAnalysis.getDocumentType());
-            log.info("Document validation result: {}", isValid);
-
-            DocumentAnalysis analysis = DocumentAnalysis.builder()
-                                                        .documentType(currentAnalysis.getDocumentType())
-                                                        .valid(isValid)
-                                                        .extractedData(extractedData)
-                                                        .analysisDate(LocalDateTime.now())
-                                                        .build();
-            log.info("Document analysis completed. Valid: {}, Extracted fields: {}", isValid, extractedData.size());
-            return analysis;
-
-        } catch (Exception e) {
-            log.error("Error analyzing document of type {}: {}", currentAnalysis.getDocumentType(), e.getMessage(), e);
-            throw e;
-        }
+        return currentAnalysis;
     }
 
     private boolean validateDocument(Map<String, String> extractedData, DocumentType documentType) {

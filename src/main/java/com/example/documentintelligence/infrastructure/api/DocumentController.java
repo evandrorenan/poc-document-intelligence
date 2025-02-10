@@ -48,6 +48,8 @@ public class DocumentController {
     })
     public ResponseEntity<DocumentAnalysis> getAnalysisResult(
             @PathVariable String protocol) {
-        return ResponseEntity.ok(documentService.getAnalysisResult(protocol));
+        DocumentAnalysis analysisResult = documentService.getAnalysisResult(protocol);
+        analysisResult.setBase64Document(null);
+        return ResponseEntity.ok(analysisResult);
     }
 }
