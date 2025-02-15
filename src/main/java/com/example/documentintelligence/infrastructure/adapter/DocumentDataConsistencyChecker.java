@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_OPENAI_ANALYZER;
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.VALIDATE_FIELD_CONTENT_ANALYZER;
@@ -21,103 +22,125 @@ public class DocumentDataConsistencyChecker implements DocumentAnalyzerPort {
 
     @Override
     public DocumentAnalysis analyzeDocument(DocumentAnalysis currentAnalysis) {
-        String referenceData = currentAnalysis.getReferenceData();
-        String documentData = String.valueOf(currentAnalysis.getStepResults().get(AZURE_OPENAI_ANALYZER));
+        var referenceData = currentAnalysis.getReferenceData();
+        var documentData = String.valueOf(currentAnalysis.getStepResults().get(AZURE_OPENAI_ANALYZER));
 
-        currentAnalysis.getMatchParams().forEach(matchParam -> {
-
-            List<String> fieldsToValidatePath = prepareFieldsToValidatePath(matchParam, referenceData);
-
-            fieldsToValidatePath.forEach(fieldToValidatePath -> {
-                try {
-                    Object content = JsonPath.read(referenceData, fieldToValidatePath);
-                    Object docContent = JsonPath.read(documentData, fieldToValidatePath);
-
-                    if (!content.getClass().equals(docContent.getClass())) {
-                        log.warn("Type doesn't match");
-                        return;
-                    }
-
-                    if (isPrimitiveType(content) && !content.equals(docContent)) {
-                        log.warn("Content doesn't match");
-                        return;
-                    }
-
-                    if (isPrimitiveType(content)) {
-                        log.info("MATCH {} filter: ", fieldToValidatePath);
-                        return;
-                    }
-
-                    List<String> contentList = (List<String>) content;
-                    List<String> docContentList = (List<String>) docContent;
-
-                    List<String> unmatchedContent = new ArrayList<>(contentList);
-                    contentList.forEach(item -> {
-                        if (docContentList.contains(item    )) {
-                            log.info("MATCH item: {} filter: ", fieldToValidatePath);
-                            docContentList.remove(item);
-                            unmatchedContent.remove(item);
-                        }
-                    });
-
-                    logUnmatchedItems("Not found on doc: ", unmatchedContent);
-                    logUnmatchedItems("Not found on user data: ", docContentList);
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            });
-
-        });
-
+        currentAnalysis.getMatchParams().forEach(matchParam ->
+                validateFields(matchParam, referenceData, documentData));
 
         return currentAnalysis;
-
     }
 
-    private List<String> prepareFieldsToValidatePath(MatchParams matchParams, String referenceData) {
-        List<String> fieldsToValidatePaths = new ArrayList<>();
+    private void validateFields(MatchParams matchParam, String referenceData, String documentData) {
+        var fieldsToValidate = prepareFieldsToValidate(matchParam, referenceData);
 
+        fieldsToValidate.forEach(fieldPath ->
+                validateField(fieldPath, referenceData, documentData));
+    }
+
+    private void validateField(String fieldPath, String referenceData, String documentData) {
+        try {
+            var referenceContent = JsonPath.read(referenceData, fieldPath);
+            var documentContent = JsonPath.read(documentData, fieldPath);
+
+            if (!areCompatibleTypes(referenceContent, documentContent)) {
+                log.warn("Type mismatch for path: {}", fieldPath);
+                return;
+            }
+
+            if (isPrimitiveType(referenceContent)) {
+                validatePrimitiveContent(fieldPath, referenceContent, documentContent);
+                return;
+            }
+
+            validateListContent(fieldPath, referenceContent, documentContent);
+
+        } catch (Exception e) {
+            log.error("Error validating field path: {}", fieldPath, e);
+        }
+    }
+
+    private boolean areCompatibleTypes(Object reference, Object document) {
+        return reference.getClass().equals(document.getClass());
+    }
+
+    private void validatePrimitiveContent(String fieldPath, Object reference, Object document) {
+        if (reference.equals(document)) {
+            log.info("Content match for path: {}", fieldPath);
+        } else {
+            log.warn("Content mismatch for path: {}", fieldPath);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void validateListContent(String fieldPath, Object reference, Object document) {
+        var referenceList = new ArrayList<>((List<String>) reference);
+        var documentList = new ArrayList<>((List<String>) document);
+        var matchedItems = new ArrayList<String>();
+
+        referenceList.forEach(item -> {
+            if (documentList.contains(item)) {
+                matchedItems.add(item);
+                documentList.remove(item);
+            }
+        });
+        referenceList.removeAll(matchedItems);
+
+        if (!referenceList.isEmpty()) {
+            log.info("Items not found in document for path {}: {}", fieldPath, referenceList);
+        }
+        if (!documentList.isEmpty()) {
+            log.info("Extra items in document for path {}: {}", fieldPath, documentList);
+        }
+    }
+
+    private List<String> prepareFieldsToValidate(MatchParams matchParams, String referenceData) {
         if (matchParams.getPathsToObjectKey().isEmpty()) {
             return List.of(matchParams.getPathToFieldContent());
         }
 
-        String pathToObjectKey = matchParams.getPathsToObjectKey();
-        Object objectKeys = JsonPath.read(referenceData, pathToObjectKey);
+        var pathToObjectKey = matchParams.getPathsToObjectKey();
+        var objectKeys = JsonPath.read(referenceData, pathToObjectKey);
 
         if (isPrimitiveType(objectKeys)) {
             return List.of(matchParams.getPathToFieldContent());
         }
 
-        if (objectKeys instanceof List<?> userContentObjectKeys) {
-            userContentObjectKeys.forEach(key -> {
-                String pathToContent = createFilter(matchParams.getPathToFieldContent(), pathToObjectKey, key);
-                fieldsToValidatePaths.add(pathToContent);
-            });
+        return createFieldPaths(matchParams, pathToObjectKey, objectKeys);
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> createFieldPaths(MatchParams matchParams, String pathToObjectKey, Object objectKeys) {
+        var fieldPaths = new ArrayList<String>();
+
+        if (objectKeys instanceof List<?> keys) {
+            keys.stream()
+                .map(key -> createFilter(matchParams.getPathToFieldContent(), pathToObjectKey, key))
+                .filter(Objects::nonNull)
+                .forEach(fieldPaths::add);
         }
 
-        fieldsToValidatePaths.forEach(System.out::println);
-        return fieldsToValidatePaths;
+        log.debug("Generated field paths: {}", fieldPaths);
+        return fieldPaths;
     }
 
     private boolean isPrimitiveType(Object object) {
-        return object instanceof String || object instanceof Boolean || object instanceof Integer || object instanceof Double;
+        return object instanceof String ||
+                object instanceof Boolean ||
+                object instanceof Integer ||
+                object instanceof Double;
     }
 
     private String createFilter(String fieldContentJsonPath, String jsonPathKey, Object item) {
-        int lastDotIndex = jsonPathKey.lastIndexOf(".");
+        var lastDotIndex = jsonPathKey.lastIndexOf(".");
         if (lastDotIndex == -1) return null;
-        String fieldName = jsonPathKey.substring(lastDotIndex);
 
-        String[] splitJsonPaths = fieldContentJsonPath.split("\\*", 2);
-        if (splitJsonPaths.length < 2) return null;
+        var fieldName = jsonPathKey.substring(lastDotIndex);
+        var pathParts = fieldContentJsonPath.split("\\*", 2);
 
-        return splitJsonPaths[0] + "?(@" + fieldName + " == " + item + ")" + splitJsonPaths[1];
+        if (pathParts.length < 2) return null;
+
+        return String.format("%s?(@%s == %s)%s",
+                pathParts[0], fieldName, item, pathParts[1]);
     }
-
-    private void logUnmatchedItems(String message, List<String> items) {
-        log.info(message);
-        items.forEach(log::info);
-    }
-
 }
