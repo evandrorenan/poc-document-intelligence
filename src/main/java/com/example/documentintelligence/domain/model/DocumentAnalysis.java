@@ -8,6 +8,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -30,12 +31,12 @@ public class DocumentAnalysis {
     @NotBlank(message = "Document content is required")
     private String base64Document;
     
-    private String originalData;
+    private String referenceData;
+
+    private List<MatchParams> matchParams;
 
     private Object extractedData;
 
-
-    
     @Builder.Default
     private Map<String, Object> stepResults = new HashMap<>();
     
