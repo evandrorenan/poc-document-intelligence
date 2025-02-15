@@ -30,7 +30,11 @@ public class DocumentAnalysis {
     @NotBlank(message = "Document content is required")
     private String base64Document;
     
+    private String originalData;
+
     private Object extractedData;
+
+
     
     @Builder.Default
     private Map<String, Object> stepResults = new HashMap<>();
