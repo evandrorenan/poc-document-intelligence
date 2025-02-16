@@ -4,17 +4,13 @@ import com.azure.ai.documentintelligence.DocumentIntelligenceClient;
 import com.azure.ai.documentintelligence.models.AnalyzeDocumentOptions;
 import com.azure.core.util.BinaryData;
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
-import com.example.documentintelligence.domain.model.DocumentType;
 import com.example.documentintelligence.domain.port.DocumentAnalyzerPort;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.HashMap;
-import java.util.Map;
 
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_DOCUMENT_INTELLIGENCE_ANALYZER;
 
@@ -34,7 +30,7 @@ public class AzureDocumentIntelligenceAnalyzer implements DocumentAnalyzerPort {
     @Override
     public DocumentAnalysis analyzeDocument(DocumentAnalysis currentAnalysis) {
 
-        log.info("Starting document analysis for type: {}", currentAnalysis.getDocumentType());
+        log.info("Starting document analysis for type: {}", currentAnalysis.getDocumentValidationRule());
 
         log.debug("Decoding base64 document");
         byte[] documentBytes = Base64.getDecoder().decode(currentAnalysis.getBase64Document());

@@ -34,7 +34,7 @@ public class DocumentAnalyzer {
     public DocumentAnalysis analyzeDocument(DocumentAnalysis documentAnalysis) {
         try {
             log.info("Starting document analysis for protocol: {}, type: {}", 
-                    documentAnalysis.getProtocol(), documentAnalysis.getDocumentType());
+                    documentAnalysis.getProtocol(), documentAnalysis.getDocumentValidationRule());
             
             DocumentAnalysis analysis = documentAnalysis;
             while (analysis.getCurrentState() != null && analysis.getStatus() != AnalysisStatus.FAILED) {

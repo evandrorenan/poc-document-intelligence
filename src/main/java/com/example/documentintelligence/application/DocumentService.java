@@ -31,7 +31,7 @@ public class DocumentService {
         // Create initial pending analysis
         DocumentAnalysis pendingAnalysis = DocumentAnalysis.builder()
                 .protocol(protocol)
-                .documentType(documentType)
+                .documentValidationRule(documentType)
                 .valid(true)
                 .base64Document(base64Document)
                 .stepResults(new HashMap<>())
@@ -55,7 +55,7 @@ public class DocumentService {
     protected void processDocumentAsync(DocumentAnalysis documentAnalysis) {
         log.info("Starting async document analysis. Protocol: {}, Type: {}",
                 documentAnalysis.getProtocol(),
-                documentAnalysis.getDocumentType());
+                documentAnalysis.getDocumentValidationRule());
 
         try {
             log.debug("Calling document analyzer service");
@@ -74,11 +74,11 @@ public class DocumentService {
             
         } catch (Exception e) {
             log.error("Error processing document. Protocol: {}, Type: {}, Error: {}", 
-                    documentAnalysis.getProtocol(), documentAnalysis.getDocumentType(), e.getMessage(), e);
+                    documentAnalysis.getProtocol(), documentAnalysis.getDocumentValidationRule(), e.getMessage(), e);
             
             DocumentAnalysis failedAnalysis = DocumentAnalysis.builder()
                     .protocol(documentAnalysis.getProtocol())
-                    .documentType(documentAnalysis.getDocumentType())
+                    .documentValidationRule(documentAnalysis.getDocumentValidationRule())
                     .status(AnalysisStatus.FAILED)
                     .errorMessage(e.getMessage())
                     .analysisDate(LocalDateTime.now())
@@ -96,7 +96,7 @@ public class DocumentService {
                     log.error("Protocol not found: {}", protocol);
                     return new IllegalArgumentException("Protocol not found: " + protocol);
                 });
-        log.debug("Found analysis result. Status: {}, Type: {}", result.getStatus(), result.getDocumentType());
+        log.debug("Found analysis result. Status: {}, Type: {}", result.getStatus(), result.getDocumentValidationRule());
         return result;
     }
 }

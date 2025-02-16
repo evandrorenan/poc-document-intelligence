@@ -24,7 +24,7 @@ public class DocumentAnalysis {
     private String protocol;
     
     @NotNull(message = "Document type is required")
-    private DocumentType documentType;
+    private DocumentValidationRule documentValidationRule;
     
     private boolean valid;
     
