@@ -1,29 +1,33 @@
 package com.example.documentintelligence.infrastructure.adapter;
 
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
+import com.example.documentintelligence.domain.model.FieldCheckRule;
 import com.example.documentintelligence.domain.model.MatchParams;
+import com.example.documentintelligence.domain.model.action.Action;
+import com.example.documentintelligence.domain.model.action.CompareAction;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
+import static com.example.documentintelligence.domain.model.FieldCheckRule.ExpectedDataType.STRING;
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_OPENAI_ANALYZER;
+import static com.example.documentintelligence.infrastructure.adapter.JsonPathProcessor.config;
 
-class DocumentDataConsistencyCheckerTest {
+@Slf4j
+public class DocumentDataConsistencyCheckerTest {
 
     @Test
-    void shouldValidateComplexArrayField() {
+    void shouldValidateComplexArrayField() throws JsonProcessingException {
         // Given
+        List<MatchParams> matchParams = getMatchParams();
 
         String referenceData = loadReferenceData();
-
         String documentData = loadDocumentData();
-
-        List<MatchParams> matchParams = List.of(
-                new MatchParams("$.propriedadeUrbana[*].proprietarios[*].nome",
-                        "$.propriedadeUrbana[*].numeroMatricula"),
-                new MatchParams("$.cpfCnpj", ""));
 
         DocumentAnalysis documentAnalysis = createDocumentAnalysis(referenceData, documentData, matchParams);
 
@@ -35,7 +39,49 @@ class DocumentDataConsistencyCheckerTest {
 
     }
 
-    private static String loadDocumentData() {
+    public static List<MatchParams> getMatchParams() throws JsonProcessingException {
+        Map<String, String> pathsToObjectKeyMap = new LinkedHashMap<>(); //to preserver order
+        pathsToObjectKeyMap.put("${MATRICULA}", "$.propriedadeUrbana[*].numeroMatricula");
+        pathsToObjectKeyMap.put("${SEQ}", "$.propriedadeUrbana[?(@.numeroMatricula==${MATRICULA})].proprietarios[*].seq");
+
+        Action action = new CompareAction(Map.of("ERROR_MESSAGE", "Imóvel ${MATRICULA} não encontrado"));
+
+        FieldCheckRule baseFieldCheckRule = FieldCheckRule.builder()
+                                                          .name("nome")
+                                                          .friendlyName("Nome do proprietario")
+                                                          .jsonPath("$.propriedadeUrbana[?(@.numeroMatricula==${MATRICULA})].proprietarios[?(@.seq==${SEQ})].nome")
+                                                          .pathsToObjectKey(pathsToObjectKeyMap)
+                                                          .expectedDataType(STRING)
+                                                          .action(action)
+                                                          .promptAdditionalInfo("Do not format. Content regex: [0-9a-zA-Z]{14}|[0-9a-zA-Z]{11}")
+                                                          .build();
+
+        List<MatchParams> matchParams = List.of(
+                new MatchParams("$.propriedadeUrbana[?(@.numeroMatricula==${MATRICULA})].proprietarios[?(@.seq==${SEQ})].nome", List.of(baseFieldCheckRule)),
+                new MatchParams("$.cpfCnpj", Collections.emptyList()));
+
+        String matchParamsJson = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(matchParams);
+
+
+        DocumentContext context = JsonPath.using(config).parse(matchParamsJson);
+        context.put("$.cor", "cor", "azul");
+        context.put("$.dia", "data", 2);
+        context.put("$.funciona", "isOK", true);
+        context.put("$.valor", "custo", 10.0);
+
+        context.json();
+
+        matchParams.forEach(mp -> {
+            try {
+                log.info(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(matchParams));
+            } catch (JsonProcessingException e) {
+                throw new RuntimeException(e);
+            }
+        });
+        return matchParams;
+    }
+
+    public static String loadDocumentData() {
         return """
                     {
                       "cpfCnpj": "321",
@@ -54,7 +100,7 @@ class DocumentDataConsistencyCheckerTest {
                 """;
     }
 
-    private static String loadReferenceData() {
+    public static String loadReferenceData() {
         return """
                     {
                       "propriedadeUrbana": [

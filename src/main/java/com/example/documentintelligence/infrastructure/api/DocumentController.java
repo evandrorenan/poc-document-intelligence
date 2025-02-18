@@ -33,7 +33,7 @@ public class DocumentController {
             @Valid @RequestBody DocumentSubmissionRequest request) {
         String protocol = documentService.submitDocument(
                 request.getBase64Document(),
-                request.getDocumentType()
+                request.getDocumentValidationRule()
         );
         return ResponseEntity.ok(new ProtocolResponse(protocol));
     }

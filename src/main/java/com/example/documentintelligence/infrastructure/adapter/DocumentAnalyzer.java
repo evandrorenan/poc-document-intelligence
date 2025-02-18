@@ -46,7 +46,8 @@ public class DocumentAnalyzer {
             return analysis;
             
         } catch (Exception e) {
-            log.error("Error during document analysis for protocol: {}", documentAnalysis.getProtocol(), e);
+            log.error("Error during d" +
+                    "ocument analysis for protocol: {}", documentAnalysis.getProtocol(), e);
             return documentAnalysis.updateStatus(AnalysisStatus.FAILED,
                     "Unexpected error during analysis: " + e.getMessage());
         }

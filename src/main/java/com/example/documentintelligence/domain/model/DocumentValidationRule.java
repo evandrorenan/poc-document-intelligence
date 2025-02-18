@@ -8,8 +8,7 @@ import java.util.List;
 @Getter
 @Builder
 public class DocumentValidationRule {
-
-    enum DocumentType {
+    public enum DocumentType {
         RG,
         REGISTRO_MATRICULA,
         CAFIR

@@ -44,7 +44,7 @@ public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
     public DocumentAnalysis analyzeDocument(DocumentAnalysis currentAnalysis) {
         try {
 
-            String fieldList = String.join("\n", currentAnalysis.getDocumentValidationRule().getFields());
+            String fieldList = "";//String.join("\n", currentAnalysis.getDocumentValidationRule().getFields());
             String content = String.join("\n", currentAnalysis.getStepResults().values().toString());
 
             String formattedPrompt = String.format(azureOpenAIPrompt, fieldList, content);

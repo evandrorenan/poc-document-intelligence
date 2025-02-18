@@ -3,6 +3,7 @@ package com.example.documentintelligence.application;
 import com.example.documentintelligence.domain.model.AnalysisStatus;
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
 import com.example.documentintelligence.domain.model.DocumentType;
+import com.example.documentintelligence.domain.model.DocumentValidationRule;
 import com.example.documentintelligence.domain.port.DocumentRepositoryPort;
 import com.example.documentintelligence.domain.workflow.DocumentProcessingState;
 import com.example.documentintelligence.infrastructure.adapter.DocumentAnalyzer;
@@ -24,14 +25,14 @@ public class DocumentService {
     private final DocumentAnalyzer documentAnalyzer;
     private final DocumentRepositoryPort documentRepository;
 
-    public String submitDocument(String base64Document, DocumentType documentType) {
+    public String submitDocument(String base64Document, DocumentValidationRule documentValidationRule) {
         String protocol = UUID.randomUUID().toString();
-        log.info("Received document submission request. Type: {}, Protocol: {}", documentType, protocol);
+        log.info("Received document submission request. Type: {}, Protocol: {}", documentValidationRule, protocol);
         
         // Create initial pending analysis
         DocumentAnalysis pendingAnalysis = DocumentAnalysis.builder()
                 .protocol(protocol)
-                .documentValidationRule(documentType)
+                .documentValidationRule(documentValidationRule)
                 .valid(true)
                 .base64Document(base64Document)
                 .stepResults(new HashMap<>())
