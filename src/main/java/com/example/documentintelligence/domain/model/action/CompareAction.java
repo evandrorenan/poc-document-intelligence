@@ -17,114 +17,88 @@ import static com.example.documentintelligence.infrastructure.adapter.JsonPathPr
 @Slf4j
 public class CompareAction extends Action {
 
-    public static final String MATCH = "MATCH";
-    public static final String ONLY_ON_REF = "ONLY_ON_REF";
-    public static final String ONLY_ON_DOC = "ONLY_ON_DOC";
-    public static final String INFORMACAO_DIVERGENTE_DO_DOCUMENTO_COMPROBATORIO = "Informacao divergente do documento comprobatorio.";
-    public static final String INFORMACAO_NAO_ENCONTRADA_NO_DOCUMENTO_COMPROBATORIO = "Informacao nao encontrada no documento comprobatorio";
+    private static final String MATCH = "MATCH";
+    private static final String ONLY_IN_REFERENCE = "ONLY_IN_REFERENCE";
+    private static final String ONLY_IN_DOCUMENT = "ONLY_IN_DOCUMENT";
+    private static final String ERROR_MISMATCH = "Informacao divergente do documento comprobatorio.";
+    private static final String ERROR_NOT_FOUND = "Informacao nao encontrada no documento comprobatorio";
 
     public CompareAction(Map<String, Object> actionParams) {
         super(ActionType.COMPARE, actionParams);
     }
 
     @Override
-    public ActionResult execute(DocumentAnalysis currentAnalysis) {
+    public ActionResult execute(DocumentAnalysis documentAnalysis) {
         ActionResult actionResult = new ActionResult();
 
-        var stepResults = currentAnalysis.getStepResults();
-        var previousStepResults = stepResults.getOrDefault(VALIDATE_FIELD_CONTENT_ANALYZER, Collections.emptyMap());
+        var stepResults = documentAnalysis.getStepResults();
+        var validationResults = stepResults.getOrDefault(VALIDATE_FIELD_CONTENT_ANALYZER, Collections.emptyMap());
 
-        String referenceData = currentAnalysis.getReferenceData();
+        if (!(validationResults instanceof Map<?, ?> validationMap) || validationMap.isEmpty()) {
+            log.warn("Validation step produced invalid results: {}", validationResults);
+            actionResult.setMessage("Não foi possível validar o campo: " + validationResults);
+            return actionResult;
+        }
+
+        List<String> referencePaths = (List<String>) validationMap.get(REFERENCE_PATHS);
+        List<String> documentPaths = (List<String>) validationMap.get(DOCUMENT_PATHS);
+
+        Map<String, List<String>> pathComparison = comparePaths(referencePaths, documentPaths);
+
+        String referenceData = documentAnalysis.getReferenceData();
         String documentData = (String) stepResults.getOrDefault(AZURE_OPENAI_ANALYZER, "");
 
-        if ((!(previousStepResults instanceof Map<?, ?>))) {
-            log.warn("Validation step produced an invalid object.: {}", previousStepResults);
-            actionResult.setMessage("Não foi possivel validar o campo: {}" + previousStepResults);
-            return actionResult;
-        }
+        validateMatchingPaths(pathComparison.get(MATCH), referenceData, documentData);
+        addErrorsToReferenceData(pathComparison.get(ONLY_IN_REFERENCE), referenceData, ERROR_NOT_FOUND);
+        // TODO: Implement behavior for ONLY_IN_DOCUMENT
 
-        var previousStepResultsMap = (Map<String, List<String>>) previousStepResults;
-        if (((Map) previousStepResults).isEmpty()) {
-            log.warn("Validation step didn't generate valid inputs: {}", previousStepResults);
-            actionResult.setMessage("Não foi possivel validar o campo: {}" + previousStepResults);
-            return actionResult;
-        }
-
-        List<String> refPaths = previousStepResultsMap.get(REFERENCE_PATHS);
-        List<String> docPaths = previousStepResultsMap.get(DOCUMENT_PATHS);
-
-        Map<String, List<String>> pathCompareResults = compare(refPaths, docPaths);
-
-        //MATCH
-        for (String path : pathCompareResults.get(MATCH)) {
-            List<String> refValues = JsonPath.using(config).parse(referenceData).read(path);
-            List<String> docValues = JsonPath.using(config).parse(documentData).read(path);
-
-            if (String.valueOf(refValues.get(0)).equalsIgnoreCase(String.valueOf(docValues.get(0)))) {
-                Map<String, List<String>> contentCompareResults = compare(refValues, docValues);
-
-                List<String> matchedPaths = contentCompareResults.get(MATCH);
-
-                for (String matchedPath : matchedPaths) {
-                    try {
-                        int fieldNameInit = Math.max(matchedPath.lastIndexOf('.'), matchedPath.lastIndexOf(']'));
-                        String parentPath = matchedPath.substring(0, fieldNameInit);
-                        String fieldName = matchedPath.substring(fieldNameInit + 1);
-
-                        JSONArray contentArray = JsonPath.using(config).parse(referenceData).json();
-                        Map targetNode = (LinkedHashMap) JsonPath.using(config).parse(contentArray).read(parentPath, List.class).get(0);
-                        targetNode.put(fieldName + "Erro", INFORMACAO_DIVERGENTE_DO_DOCUMENTO_COMPROBATORIO);
-
-                    } catch (PathNotFoundException e) {
-                        log.warn("Path not found on reference data: {}", path);
-                    }
-                }
-            }
-        }
-
-        //ONLY ON REF
-        for (String path : pathCompareResults.get(ONLY_ON_REF)) {
-            try {
-                int fieldNameInit = Math.max(path.lastIndexOf('.'), path.lastIndexOf(']'));
-                String parentPath = path.substring(0, fieldNameInit);
-                String fieldName = path.substring(fieldNameInit + 1);
-
-                JSONArray contentArray = JsonPath.using(config).parse(referenceData).json();
-                Map targetNode = (LinkedHashMap) JsonPath.using(config).parse(contentArray).read(parentPath, List.class).get(0);
-                targetNode.put(fieldName + "Erro", INFORMACAO_NAO_ENCONTRADA_NO_DOCUMENTO_COMPROBATORIO);
-
-            } catch (PathNotFoundException e) {
-                log.warn("Path not found on reference data: {}", path);
-            }
-        }
-
-        //ONLY ON DOCUMENT
-        //TODO: Implement behavior for data found just on document
         return actionResult;
     }
 
-    private Map<String, List<String>> compare(List<String> ref, List<String> target) {
+    private Map<String, List<String>> comparePaths(List<String> referencePaths, List<String> documentPaths) {
         Map<String, List<String>> result = new HashMap<>();
+        Set<String> referenceSet = new HashSet<>(referencePaths);
+        Set<String> documentSet = new HashSet<>(documentPaths);
 
-        Set<String> refSet = new HashSet<>(ref);
-        Set<String> docSet = new HashSet<>(target);
-
-        List<String> onlyOnReferencePaths = ref.stream()
-                                               .filter(path -> !docSet.contains(path))
-                                               .toList();
-
-        List<String> onlyOnDocumentPaths = target.stream()
-                                                 .filter(path -> !refSet.contains(path))
-                                                 .toList();
-
-        List<String> matchPaths = ref.stream()
-                                     .filter(docSet::contains)
-                                     .toList();
-
-        result.put(MATCH, matchPaths);
-        result.put(ONLY_ON_REF, onlyOnReferencePaths);
-        result.put(ONLY_ON_DOC, onlyOnDocumentPaths);
+        result.put(MATCH, referencePaths.stream().filter(documentSet::contains).toList());
+        result.put(ONLY_IN_REFERENCE, referencePaths.stream().filter(path -> !documentSet.contains(path)).toList());
+        result.put(ONLY_IN_DOCUMENT, documentPaths.stream().filter(path -> !referenceSet.contains(path)).toList());
 
         return result;
+    }
+
+    private void validateMatchingPaths(List<String> matchingPaths, String referenceData, String documentData) {
+        for (String path : matchingPaths) {
+            try {
+                List<String> referenceValues = JsonPath.using(config).parse(referenceData).read(path);
+                List<String> documentValues = JsonPath.using(config).parse(documentData).read(path);
+
+                if (!referenceValues.get(0).equalsIgnoreCase(documentValues.get(0))) {
+                    addErrorToReferenceData(path, referenceData, ERROR_MISMATCH);
+                }
+            } catch (PathNotFoundException e) {
+                log.warn("Path not found in reference data: {}", path);
+            }
+        }
+    }
+
+    private void addErrorsToReferenceData(List<String> paths, String referenceData, String errorMessage) {
+        for (String path : paths) {
+            addErrorToReferenceData(path, referenceData, errorMessage);
+        }
+    }
+
+    private void addErrorToReferenceData(String path, String referenceData, String errorMessage) {
+        try {
+            int lastIndex = Math.max(path.lastIndexOf('.'), path.lastIndexOf(']'));
+            String parentPath = path.substring(0, lastIndex);
+            String fieldName = path.substring(lastIndex + 1);
+
+            JSONArray contentArray = JsonPath.using(config).parse(referenceData).json();
+            Map targetNode = (LinkedHashMap) JsonPath.using(config).parse(contentArray).read(parentPath, List.class).get(0);
+            targetNode.put(fieldName + "Erro", errorMessage);
+        } catch (PathNotFoundException e) {
+            log.warn("Path not found in reference data: {}", path);
+        }
     }
 }
