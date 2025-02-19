@@ -6,6 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @Slf4j
 public class ActionResult {
-    private String message;
-    private String content;
+    public enum ActionOutcomeType { SUCCESS, PARTIAL_SUCCESS, FAILURE, UNCHANGED }
+
+    private int failedActions;
+    private int succeededActions;
+    private ActionOutcomeType outcomeType;
+    private String outcome;
 }
