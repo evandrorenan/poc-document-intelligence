@@ -4,31 +4,26 @@ import com.example.documentintelligence.domain.model.DocumentAnalysis;
 import com.example.documentintelligence.domain.model.FieldCheckRule;
 import com.example.documentintelligence.domain.model.MatchParams;
 import com.example.documentintelligence.domain.model.action.Action;
-import com.example.documentintelligence.domain.model.action.CompareAction;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
-import net.minidev.json.JSONArray;
-import net.minidev.json.JSONObject;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
 
 import static com.example.documentintelligence.domain.model.FieldCheckRule.ExpectedDataType.STRING;
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_OPENAI_ANALYZER;
-import static com.example.documentintelligence.infrastructure.adapter.JsonPathProcessor.config;
+import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.VALIDATE_FIELD_CONTENT_ANALYZER;
+import static com.example.documentintelligence.infrastructure.adapter.DocumentDataConsistencyChecker.DOCUMENT_PATHS;
+import static com.example.documentintelligence.infrastructure.adapter.DocumentDataConsistencyChecker.REFERENCE_PATHS;
 
 @Slf4j
 public class DocumentDataConsistencyCheckerTest {
 
     @Test
-    void shouldValidateComplexArrayField() throws JsonProcessingException {
+    void shouldValidateComplexArrayField() {
         // Given
         List<MatchParams> matchParams = getMatchParams();
-
         String referenceData = loadReferenceData();
         String documentData = loadDocumentData();
 
@@ -38,16 +33,36 @@ public class DocumentDataConsistencyCheckerTest {
         DocumentAnalysis result = new DocumentDataConsistencyChecker().analyzeDocument(documentAnalysis);
 
         // Then
-
-
+        Assertions.assertDoesNotThrow(() -> {
+            Map<String, List<String>> pathsMap = (Map<String, List<String>>) result.getStepResults().get(VALIDATE_FIELD_CONTENT_ANALYZER);
+            List<String> referencePaths = pathsMap.get(REFERENCE_PATHS);
+            referencePaths.forEach(path -> JsonPath.parse(referenceData).read(path));
+            List<String> documentPaths = pathsMap.get(DOCUMENT_PATHS);
+            documentPaths.forEach(path -> JsonPath.parse(referenceData).read(path));
+        });
     }
 
-    public static List<MatchParams> getMatchParams() throws JsonProcessingException {
+
+    private DocumentAnalysis createDocumentAnalysis(
+            String referenceData,
+            String documentData,
+            List<MatchParams> matchParams) {
+
+        Map<String, Object> stepResults = new HashMap<>();
+        stepResults.put(AZURE_OPENAI_ANALYZER, documentData);
+        return DocumentAnalysis.builder()
+                               .referenceData(referenceData)
+                               .stepResults(stepResults)
+                               .matchParams(matchParams)
+                               .build();
+    }
+
+    public static List<MatchParams> getMatchParams() {
         Map<String, String> pathsToObjectKeyMap = new LinkedHashMap<>(); //to preserver order
         pathsToObjectKeyMap.put("${MATRICULA}", "$.propriedadeUrbana[*].numeroMatricula");
         pathsToObjectKeyMap.put("${SEQ}", "$.propriedadeUrbana[?(@.numeroMatricula==${MATRICULA})].proprietarios[*].seq");
 
-        Action action = new CompareAction(Map.of("ERROR_MESSAGE", "Imóvel ${MATRICULA} não encontrado"));
+        Action action = null;
 
         FieldCheckRule baseFieldCheckRule = FieldCheckRule.builder()
                                                           .name("nome")
@@ -59,29 +74,9 @@ public class DocumentDataConsistencyCheckerTest {
                                                           .promptAdditionalInfo("Do not format. Content regex: [0-9a-zA-Z]{14}|[0-9a-zA-Z]{11}")
                                                           .build();
 
-        List<MatchParams> matchParams = List.of(
+        return List.of(
                 new MatchParams("$.propriedadeUrbana[?(@.numeroMatricula==${MATRICULA})].proprietarios[?(@.seq==${SEQ})].nome", List.of(baseFieldCheckRule)),
                 new MatchParams("$.cpfCnpj", Collections.emptyList()));
-
-        String matchParamsJson = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(matchParams);
-
-
-        JSONArray jsonArray = JsonPath.using(config).parse(matchParamsJson).json();
-        Map targetNode = (LinkedHashMap) JsonPath.using(config).parse(jsonArray).read("$[0].fieldCheckRules[0]", List.class).get(0);
-        targetNode.put("idade", 10);
-        new ObjectMapper().writeValueAsString(targetNode);
-
-
-        log.info(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(""));
-
-        matchParams.forEach(mp -> {
-            try {
-                log.info(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(matchParams));
-            } catch (JsonProcessingException e) {
-                throw new RuntimeException(e);
-            }
-        });
-        return matchParams;
     }
 
     public static String loadDocumentData() {
@@ -121,17 +116,4 @@ public class DocumentDataConsistencyCheckerTest {
                 """;
     }
 
-    private DocumentAnalysis createDocumentAnalysis(
-            String referenceData,
-            String documentData,
-            List<MatchParams> matchParams) {
-
-        Map<String, Object> stepResults = new HashMap<>();
-        stepResults.put(AZURE_OPENAI_ANALYZER, documentData);
-        return DocumentAnalysis.builder()
-                               .referenceData(referenceData)
-                               .stepResults(stepResults)
-                               .matchParams(matchParams)
-                               .build();
-    }
 }
