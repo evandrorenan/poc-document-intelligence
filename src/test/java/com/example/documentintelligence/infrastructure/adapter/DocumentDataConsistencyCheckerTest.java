@@ -6,10 +6,13 @@ import com.example.documentintelligence.domain.model.MatchParams;
 import com.example.documentintelligence.domain.model.action.Action;
 import com.example.documentintelligence.domain.model.action.CompareAction;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import lombok.extern.slf4j.Slf4j;
+import net.minidev.json.JSONArray;
+import net.minidev.json.JSONObject;
 import org.junit.jupiter.api.Test;
 
 import java.util.*;
@@ -63,13 +66,13 @@ public class DocumentDataConsistencyCheckerTest {
         String matchParamsJson = new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(matchParams);
 
 
-        DocumentContext context = JsonPath.using(config).parse(matchParamsJson);
-        context.put("$.cor", "cor", "azul");
-        context.put("$.dia", "data", 2);
-        context.put("$.funciona", "isOK", true);
-        context.put("$.valor", "custo", 10.0);
+        JSONArray jsonArray = JsonPath.using(config).parse(matchParamsJson).json();
+        Map targetNode = (LinkedHashMap) JsonPath.using(config).parse(jsonArray).read("$[0].fieldCheckRules[0]", List.class).get(0);
+        targetNode.put("idade", 10);
+        new ObjectMapper().writeValueAsString(targetNode);
 
-        context.json();
+
+        log.info(new ObjectMapper().writerWithDefaultPrettyPrinter().writeValueAsString(""));
 
         matchParams.forEach(mp -> {
             try {
