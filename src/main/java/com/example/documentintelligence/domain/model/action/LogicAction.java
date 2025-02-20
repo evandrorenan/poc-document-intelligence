@@ -1,13 +1,18 @@
 package com.example.documentintelligence.domain.model.action;
 
-import com.example.documentintelligence.domain.model.FieldCheckRule;
+import com.example.documentintelligence.domain.model.DocumentAnalysis;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class LogicAction { //extends Action {
+public class LogicAction implements Action {
 
-    //@Override
-    public ActionResult execute(FieldCheckRule fieldCheckRule) {
+    @Override
+    public ActionType getActionType() {
+        return null;
+    }
+
+    @Override
+    public ActionResult execute(DocumentAnalysis currentAnalysis) {
         return null;
     }
 }

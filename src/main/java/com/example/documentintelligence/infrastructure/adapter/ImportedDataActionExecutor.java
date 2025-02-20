@@ -3,6 +3,8 @@ package com.example.documentintelligence.infrastructure.adapter;
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
 import com.example.documentintelligence.domain.model.action.Action;
 import com.example.documentintelligence.domain.model.action.CompareAction;
+import com.example.documentintelligence.domain.model.action.LogicAction;
+import com.example.documentintelligence.domain.model.action.OverrideAction;
 import com.example.documentintelligence.domain.port.DocumentAnalyzerPort;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
@@ -30,12 +32,13 @@ public class ImportedDataActionExecutor implements DocumentAnalyzerPort {
         Action action = currentAnalysis.getDocumentValidationRule().getFieldsToCheck().get(0).getAction();
         switch (action.getActionType()) {
             case COMPARE -> {
-                new CompareAction().getActionType();
-
+                ((CompareAction) action).execute(currentAnalysis);
             }
             case OVERRIDE -> {
+                ((LogicAction) action).execute(currentAnalysis);
             }
             case LOGIC -> {
+                ((OverrideAction) action).execute(currentAnalysis);
             }
         }
 
