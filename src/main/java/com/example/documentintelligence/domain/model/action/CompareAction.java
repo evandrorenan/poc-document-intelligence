@@ -12,8 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.*;
 
 import static com.example.documentintelligence.domain.model.action.ActionResult.ActionOutcomeType.*;
-import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_OPENAI_ANALYZER;
-import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.VALIDATE_FIELD_CONTENT_ANALYZER;
+import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.*;
 import static com.example.documentintelligence.infrastructure.adapter.DocumentDataConsistencyChecker.DOCUMENT_PATHS;
 import static com.example.documentintelligence.infrastructure.adapter.DocumentDataConsistencyChecker.REFERENCE_PATHS;
 import static com.example.documentintelligence.infrastructure.adapter.JsonPathProcessor.config;
@@ -62,6 +61,9 @@ public class CompareAction extends Action {
         int contentErrors = addErrorsToReferenceData(pathComparison.get(ONLY_IN_REFERENCE), referenceData, ERROR_NOT_FOUND, actionResult);
 
         setActionResult(actionResult, pathComparison, pathErrors, contentErrors);
+
+        documentAnalysis.getStepResults().put(IMPORTED_DATA_ACTION_EXECUTOR, actionResult);
+
         return actionResult;
     }
 
@@ -114,7 +116,7 @@ public class CompareAction extends Action {
                 return 1;
             }
         } catch (PathNotFoundException e) {
-            log.warn("Path not found: {}", path);
+            log.warn("Validate error. Path not found: {}", path);
         }
         return 0;
     }
@@ -142,7 +144,7 @@ public class CompareAction extends Action {
             referenceData = new ObjectMapper().writeValueAsString(targetNode);
 
         } catch (PathNotFoundException e) {
-            log.warn("Path not found: {}", path);
+            log.warn("Could'nt add error to reference data. Path not found: {}", path);
         } catch (JsonProcessingException e) {
             log.warn("JsonProcessingException: {}", path);
         }

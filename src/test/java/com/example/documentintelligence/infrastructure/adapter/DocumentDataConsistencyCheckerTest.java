@@ -101,7 +101,7 @@ public class DocumentDataConsistencyCheckerTest {
 
         DocumentAnalysis result = new DocumentDataConsistencyChecker().analyzeDocument(documentAnalysis);
 
-        log.info(mapper.writerWithDefaultPrettyPrinter().writeValueAsString(result));
+
     }
 
     private DocumentAnalysis createDocumentAnalysis(

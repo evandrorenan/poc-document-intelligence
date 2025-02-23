@@ -47,7 +47,13 @@ public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
         try {
 
             String fieldList = currentAnalysis.getDocumentValidationRule().getFieldsToCheck().stream()
-              .map(field -> field.getJsonPath() + " //" + field.getPromptAdditionalInfo())
+              .map(field -> {
+                  var jsonPath = field.getJsonPath() + " //" + field.getPromptAdditionalInfo() + "\n";
+                  var tokenPaths = field.getPathsToObjectKey().values().stream()
+                                        .reduce((a, b) -> String.join("\n", a, b == null ? "" : b))
+                                        .orElse("");
+                  return String.join("\n", jsonPath, tokenPaths);
+              })
               .reduce((a, b) -> String.join("\n", a, b == null ? "" : b))
               .orElse("");
 
