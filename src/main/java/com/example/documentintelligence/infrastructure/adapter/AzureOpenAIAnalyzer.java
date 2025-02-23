@@ -15,7 +15,9 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
+import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_DOCUMENT_INTELLIGENCE_ANALYZER;
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_OPENAI_ANALYZER;
 
 @Component
@@ -44,8 +46,12 @@ public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
     public DocumentAnalysis analyzeDocument(DocumentAnalysis currentAnalysis) {
         try {
 
-            String fieldList = "";//String.join("\n", currentAnalysis.getDocumentValidationRule().getFields());
-            String content = String.join("\n", currentAnalysis.getStepResults().values().toString());
+            String fieldList = currentAnalysis.getDocumentValidationRule().getFieldsToCheck().stream()
+              .map(field -> field.getJsonPath() + " //" + field.getPromptAdditionalInfo())
+              .reduce((a, b) -> String.join("\n", a, b == null ? "" : b))
+              .orElse("");
+
+            String content = String.join("\n", currentAnalysis.getStepResults().get(AZURE_DOCUMENT_INTELLIGENCE_ANALYZER).toString());
 
             String formattedPrompt = String.format(azureOpenAIPrompt, fieldList, content);
 

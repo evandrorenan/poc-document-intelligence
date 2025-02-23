@@ -31,10 +31,7 @@ public class DocumentController {
     })
     public ResponseEntity<ProtocolResponse> submitDocument(
             @Valid @RequestBody DocumentSubmissionRequest request) {
-        String protocol = documentService.submitDocument(
-                request.getBase64Document(),
-                request.getDocumentValidationRule()
-        );
+        String protocol = documentService.submitDocument(request);
         return ResponseEntity.ok(new ProtocolResponse(protocol));
     }
 

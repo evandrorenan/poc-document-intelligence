@@ -33,8 +33,6 @@ public class DocumentAnalysis {
     
     private String referenceData;
 
-    private List<MatchParams> matchParams;
-
     private Object extractedData;
 
     @Builder.Default

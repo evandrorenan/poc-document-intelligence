@@ -12,4 +12,7 @@ public class DocumentSubmissionRequest {
 
     @NotNull(message = "Document type is required")
     private DocumentValidationRule documentValidationRule;
+
+    @NotNull(message = "referenceData is required")
+    private String referenceData;
 }

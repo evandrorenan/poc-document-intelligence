@@ -1,14 +1,15 @@
 package com.example.documentintelligence.infrastructure.adapter;
 
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
-import com.example.documentintelligence.domain.model.MatchParams;
 import com.example.documentintelligence.domain.port.DocumentAnalyzerPort;
-import com.jayway.jsonpath.JsonPath;
+import com.jayway.jsonpath.InvalidJsonException;
+import com.jayway.jsonpath.JsonPathException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Stream;
 
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_OPENAI_ANALYZER;
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.VALIDATE_FIELD_CONTENT_ANALYZER;
@@ -31,17 +32,22 @@ public class DocumentDataConsistencyChecker implements DocumentAnalyzerPort {
 
         Map<String, List<String>> pathsMap = Map.of(REFERENCE_PATHS, referencePaths, DOCUMENT_PATHS, documentPaths);
         currentAnalysis.getStepResults()
-           .put(VALIDATE_FIELD_CONTENT_ANALYZER,
-                   pathsMap);
+                       .put(VALIDATE_FIELD_CONTENT_ANALYZER,
+                               pathsMap);
 
         return currentAnalysis;
     }
 
     private static List<String> expandPaths(DocumentAnalysis currentAnalysis, String referenceData) {
-        return currentAnalysis.getMatchParams().stream().flatMap(matchParam ->
-            matchParam.getFieldCheckRules().stream().flatMap(fieldCheckRule -> {
+        try {
+            List<String> strings = currentAnalysis.getDocumentValidationRule().getFieldsToCheck().stream().flatMap(fieldCheckRule -> {
                 Map<String, String> pendingPaths = new LinkedHashMap<>(fieldCheckRule.getPathsToObjectKey());
-                return JsonPathProcessor.replaceTokens(fieldCheckRule.getJsonPath(), referenceData, pendingPaths).stream();
-            })).toList();
+                Stream<String> stream = JsonPathProcessor.replaceTokens(fieldCheckRule.getJsonPath(), referenceData, pendingPaths).stream();
+                return stream;
+            }).toList();
+            return strings;
+        } catch (JsonPathException e) {
+            return List.of("$");
+        }
     }
 }

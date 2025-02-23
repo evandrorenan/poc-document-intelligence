@@ -1,8 +1,6 @@
 package com.example.documentintelligence.infrastructure.adapter;
 
-import com.jayway.jsonpath.Configuration;
-import com.jayway.jsonpath.JsonPath;
-import com.jayway.jsonpath.Option;
+import com.jayway.jsonpath.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
@@ -12,7 +10,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class JsonPathProcessor {
 
-    private static final String TOKEN_REGEX = "\\$\\{[^#]+}";
+    private static final String TOKEN_REGEX = "\\{[^#]+}";
 
 
     public static final Configuration config = Configuration.builder()
@@ -75,12 +73,8 @@ public class JsonPathProcessor {
         List<String> extractedValues = new LinkedList<>();
 
         resolvedPaths.forEach(path -> {
-            try {
-                List<?> extractedData = JsonPath.using(config).parse(documentData).read(path);
-                extractedData.forEach(value -> extractedValues.add(String.valueOf(value)));
-            } catch (com.jayway.jsonpath.JsonPathException e) {
-                log.warn("Invalid JSONPath expression: " + path);
-            }
+            List<?> extractedData = JsonPath.using(config).parse(documentData).read(path);
+            extractedData.forEach(value -> extractedValues.add(String.valueOf(value)));
         });
         return extractedValues;
     }
@@ -88,6 +82,10 @@ public class JsonPathProcessor {
     private List<String> resolveTokensInPath(String path, Map<String, List<String>> tokenMappings) {
         List<String> resolvedPaths = new LinkedList<>();
         Matcher matcher = Pattern.compile(TOKEN_REGEX).matcher(path);
+
+        if (matcher.groupCount() == 0) {
+            JsonPath.using(config).parse(path); // Will throw runtime exception if path is invalid
+        }
 
         while (matcher.find()) {
             String token = matcher.group(0);

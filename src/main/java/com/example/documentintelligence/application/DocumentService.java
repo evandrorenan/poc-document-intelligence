@@ -1,12 +1,10 @@
 package com.example.documentintelligence.application;
 
-import com.example.documentintelligence.domain.model.AnalysisStatus;
-import com.example.documentintelligence.domain.model.DocumentAnalysis;
-import com.example.documentintelligence.domain.model.DocumentType;
-import com.example.documentintelligence.domain.model.DocumentValidationRule;
+import com.example.documentintelligence.domain.model.*;
 import com.example.documentintelligence.domain.port.DocumentRepositoryPort;
 import com.example.documentintelligence.domain.workflow.DocumentProcessingState;
 import com.example.documentintelligence.infrastructure.adapter.DocumentAnalyzer;
+import com.example.documentintelligence.infrastructure.api.dto.DocumentSubmissionRequest;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -15,6 +13,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -25,16 +24,17 @@ public class DocumentService {
     private final DocumentAnalyzer documentAnalyzer;
     private final DocumentRepositoryPort documentRepository;
 
-    public String submitDocument(String base64Document, DocumentValidationRule documentValidationRule) {
+    public String submitDocument(DocumentSubmissionRequest request) {
         String protocol = UUID.randomUUID().toString();
-        log.info("Received document submission request. Type: {}, Protocol: {}", documentValidationRule, protocol);
-        
+        log.info("Received document submission request. Type: {}, Protocol: {}", request.getDocumentValidationRule(), protocol);
+
         // Create initial pending analysis
         DocumentAnalysis pendingAnalysis = DocumentAnalysis.builder()
                 .protocol(protocol)
-                .documentValidationRule(documentValidationRule)
+                .documentValidationRule(request.getDocumentValidationRule())
                 .valid(true)
-                .base64Document(base64Document)
+                .base64Document(request.getBase64Document())
+                .referenceData(request.getReferenceData())
                 .stepResults(new HashMap<>())
                 .currentState(DocumentProcessingState.getInitialState())
                 .status(AnalysisStatus.PENDING)

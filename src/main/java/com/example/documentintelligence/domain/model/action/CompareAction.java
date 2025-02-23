@@ -1,6 +1,7 @@
 package com.example.documentintelligence.domain.model.action;
 
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jayway.jsonpath.JsonPath;
@@ -19,7 +20,7 @@ import static com.example.documentintelligence.infrastructure.adapter.JsonPathPr
 
 @Slf4j
 @Component
-public class CompareAction implements Action {
+public class CompareAction extends Action {
 
     private static final String MATCH = "MATCH";
     private static final String ONLY_IN_REFERENCE = "ONLY_IN_REFERENCE";
@@ -27,9 +28,17 @@ public class CompareAction implements Action {
     private static final String ERROR_MISMATCH = "Informacao divergente do documento comprobatorio.";
     private static final String ERROR_NOT_FOUND = "Informacao nao encontrada no documento comprobatorio";
 
+    @JsonProperty("actionType")
+    private final ActionType actionType = ActionType.COMPARE;
+
+    public CompareAction() {
+        super();
+    }
+
     @Override
+    @JsonProperty("actionType")
     public ActionType getActionType() {
-        return ActionType.COMPARE;
+        return actionType;
     }
 
     @Override
@@ -60,7 +69,7 @@ public class CompareAction implements Action {
         var validationResults = documentAnalysis.getStepResults().getOrDefault(
                 VALIDATE_FIELD_CONTENT_ANALYZER, Collections.emptyMap());
 
-        if (!(validationResults instanceof Map<?, ?> validationResultsMap)) {
+        if (!(validationResults instanceof Map<?, ?>)) {
             log.warn("Validation step didn't produce a valid Map");
             return Collections.emptyMap();
         }
