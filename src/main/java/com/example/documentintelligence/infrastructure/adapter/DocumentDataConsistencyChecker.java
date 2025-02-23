@@ -43,7 +43,7 @@ public class DocumentDataConsistencyChecker implements DocumentAnalyzerPort {
             List<String> strings = currentAnalysis.getDocumentValidationRule().getFieldsToCheck().stream().flatMap(fieldCheckRule -> {
 
                 Map<String, String> pendingPaths = new LinkedHashMap<>(fieldCheckRule.getPathsToObjectKey());
-                Stream<String> stream = JsonPathProcessor.replaceTokens(fieldCheckRule.getJsonPath(), referenceData, pendingPaths).stream();
+                Stream<String> stream = JsonPathProcessor.replacePendingTokens(fieldCheckRule.getJsonPath(), referenceData, pendingPaths).stream();
                 return stream;
             }).toList();
             return strings;
