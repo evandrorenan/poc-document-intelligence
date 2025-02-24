@@ -22,8 +22,8 @@ import static com.example.documentintelligence.infrastructure.adapter.JsonPathPr
 public class CompareAction extends Action {
 
     private static final String MATCH = "MATCH";
-    private static final String ONLY_IN_REFERENCE = "ONLY_IN_REFERENCE";
-    private static final String ONLY_IN_DOCUMENT = "ONLY_IN_DOCUMENT";
+    private static final String ONLY_ON_REFERENCE = "ONLY_ON_REFERENCE";
+    private static final String ONLY_ON_DOCUMENT = "ONLY_ON_DOCUMENT";
     private static final String ERROR_MISMATCH = "Informacao divergente do documento comprobatorio.";
     private static final String ERROR_NOT_FOUND = "Informacao nao encontrada no documento comprobatorio";
 
@@ -43,6 +43,8 @@ public class CompareAction extends Action {
     @Override
     public ActionResult execute(DocumentAnalysis documentAnalysis) {
         ActionResult actionResult = new ActionResult();
+        actionResult.setDocumentExtraData(new ArrayList<>());
+
         Map<String, Object> validationResults = getValidationResults(documentAnalysis);
 
         if (validationResults.isEmpty()) {
@@ -57,8 +59,20 @@ public class CompareAction extends Action {
         String referenceData = documentAnalysis.getReferenceData();
         String documentData = (String) documentAnalysis.getStepResults().getOrDefault(AZURE_OPENAI_ANALYZER, "");
 
-        int pathErrors = validateMatchingPaths(pathComparison.get(MATCH), referenceData, documentData, actionResult);
-        int contentErrors = addErrorsToReferenceData(pathComparison.get(ONLY_IN_REFERENCE), referenceData, ERROR_NOT_FOUND, actionResult);
+        actionResult.setOutcome(referenceData);
+
+        int pathErrors = validateMatchingPaths(pathComparison.get(MATCH), documentData, actionResult);
+        int contentErrors = addErrorsToReferenceData(pathComparison.get(ONLY_ON_REFERENCE), ERROR_NOT_FOUND, actionResult);
+        contentErrors += pathComparison.get(ONLY_ON_DOCUMENT).stream()
+                                       .map(p -> {
+                                       List<String> onlyOnDocument = JsonPath.using(config).parse(documentData).read(p, List.class);
+                                       if (onlyOnDocument.isEmpty()) return Collections.emptyList();
+
+                                       actionResult.getDocumentExtraData().add(p + ": " + onlyOnDocument.get(0));
+                                       return onlyOnDocument;
+                                   })
+                                       .filter(item -> !item.isEmpty())
+                                       .count();
 
         setActionResult(actionResult, pathComparison, pathErrors, contentErrors);
 
@@ -92,27 +106,39 @@ public class CompareAction extends Action {
         Set<String> documentSet = new HashSet<>(documentPaths);
 
         result.put(MATCH, referencePaths.stream().filter(documentSet::contains).toList());
-        result.put(ONLY_IN_REFERENCE, referencePaths.stream().filter(p -> !documentSet.contains(p)).toList());
-        result.put(ONLY_IN_DOCUMENT, documentPaths.stream().filter(p -> !referenceSet.contains(p)).toList());
+        result.put(ONLY_ON_REFERENCE, referencePaths.stream().filter(p -> !documentSet.contains(p)).toList());
+        result.put(ONLY_ON_DOCUMENT, documentPaths.stream().filter(p -> !referenceSet.contains(p)).toList());
         return result;
     }
 
-
-    private int validateMatchingPaths(List<String> matchingPaths, String referenceData, String documentData, ActionResult actionResult) {
+    private int validateMatchingPaths(List<String> matchingPaths, String documentData, ActionResult actionResult) {
         int errors = 0;
         for (String path : matchingPaths) {
-            errors += validatePath(path, referenceData, documentData, actionResult);
+            errors += validatePath(path, documentData, actionResult);
         }
         return errors;
     }
 
-    private int validatePath(String path, String referenceData, String documentData, ActionResult actionResult) {
+    private int validatePath(String path, String documentData, ActionResult actionResult) {
+        var referenceData = actionResult.getOutcome();
         try {
             List<String> refValues = JsonPath.using(config).parse(referenceData).read(path);
             List<String> docValues = JsonPath.using(config).parse(documentData).read(path);
 
+            if (refValues.size() == 0) {
+                actionResult.getDocumentExtraData().add(path + ": " + docValues);
+                return 1;
+            }
+
+            if (docValues.size() == 0) {
+                referenceData = addErrorToReferenceData(path, ERROR_NOT_FOUND, actionResult);
+                actionResult.setOutcome(referenceData);
+                return 1;
+            }
+
             if (!refValues.get(0).equalsIgnoreCase(docValues.get(0))) {
-                addErrorToReferenceData(path, referenceData, ERROR_MISMATCH, actionResult);
+                referenceData = addErrorToReferenceData(path, ERROR_MISMATCH, actionResult);
+                actionResult.setOutcome(referenceData);
                 return 1;
             }
         } catch (PathNotFoundException e) {
@@ -122,31 +148,37 @@ public class CompareAction extends Action {
     }
 
 
-    private int addErrorsToReferenceData(List<String> paths, String referenceData, String errorMessage, ActionResult actionResult) {
+    private int addErrorsToReferenceData(List<String> paths, String errorMessage, ActionResult actionResult) {
         int count = 0;
         for (String path : paths) {
-            referenceData = addErrorToReferenceData(path, referenceData, errorMessage, actionResult);
-            actionResult.setOutcome(referenceData);
+            actionResult.setOutcome(addErrorToReferenceData(path, errorMessage, actionResult));
             count++;
         }
         return count;
     }
 
-    private String addErrorToReferenceData(String path, String referenceData, String errorMessage, ActionResult actionResult) {
+    private String addErrorToReferenceData(String path, String errorMessage, ActionResult actionResult) {
+        String referenceData = actionResult.getOutcome();
+
         try {
             int lastIndex = Math.max(path.lastIndexOf('.'), path.lastIndexOf(']'));
             String parentPath = path.substring(0, lastIndex);
             String fieldName = path.substring(lastIndex + 1);
 
-            var contentArray = JsonPath.using(config).parse(referenceData).json();
-            Map targetNode = (LinkedHashMap) JsonPath.using(config).parse(contentArray).read(parentPath, List.class).get(0);
+            var documentContext = JsonPath.using(config).parse(referenceData);
+            List<Map<String, Object>> nodes = documentContext.read(parentPath);
+            if (nodes.isEmpty()) {
+                throw new PathNotFoundException("Path not found: " + parentPath);
+            }
+
+            Map<String, Object> targetNode = nodes.get(0);
             targetNode.put(fieldName + "Erro", errorMessage);
-            referenceData = new ObjectMapper().writeValueAsString(targetNode);
+
+            documentContext.set(parentPath, nodes);
+            referenceData = documentContext.jsonString();
 
         } catch (PathNotFoundException e) {
             log.warn("Could'nt add error to reference data. Path not found: {}", path);
-        } catch (JsonProcessingException e) {
-            log.warn("JsonProcessingException: {}", path);
         }
         return referenceData;
     }

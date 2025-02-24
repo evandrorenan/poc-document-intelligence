@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Validação de Documentos</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor/dist/jsoneditor.js"></script>
+</head>
+<body>
+<div class="container">
+    <h1>Validação de Documentos</h1>
+    <div class="section">
+        <h2>Regras de Validação de Documentos:</h2>
+        <label for="documentType">Tipo de Documento:</label>
+        <select id="documentType">
+            <option value="REGISTRO_MATRICULA">Registro de Matrícula</option>
+            <option value="CNH">CNH</option>
+        </select>
+        <label for="modelDeploymentId">ID do Modelo de Implementação:</label>
+        <input type="text" id="modelDeploymentId" value="document-deployment-gpt-4o" readonly>
+        <label for="promptAdditionalInfo">Informações Adicionais do Prompt:</label>
+        <input type="text" id="promptAdditionalInfo">
+
+        <div id="fieldsToCheckContainer">
+            <h3>Campos a Verificar:</h3>
+            <button id="addFieldButton">Adicionar Campo</button>
+        </div>
+    </div>
+
+    <div class="section">
+        <h2>Documento Base64:</h2>
+        <input type="file" id="base64document">
+    </div>
+
+    <div class="section">
+        <h2>Dados de Referência:</h2>
+        <div id="referenceDataEditor"></div>
+    </div>
+
+    <button id="create-input-screen">Criar Tela de Input</button>
+    <button id="submitButton">Enviar para Análise</button>
+    <div id="statusDisplay"></div>
+    <div id="editor_holder"></div>
+</div>
+<script src="scripts.js"></script>
+</body>
+</html>

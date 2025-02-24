@@ -4,6 +4,7 @@ import com.jayway.jsonpath.*;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.*;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -15,6 +16,7 @@ public class JsonPathProcessor {
 
     private static final String TOKEN_REGEX = "\\{[^#]+}";
     private static final int MAX_RECURSION_DEPTH = 100;
+    private final ReentrantLock lock = new ReentrantLock();
 
     public static final Configuration config = Configuration.builder()
                                                             .options(Option.ALWAYS_RETURN_LIST)
@@ -22,32 +24,21 @@ public class JsonPathProcessor {
 
     /**
      * Replaces tokens in a JSONPath expression using extracted values.
-     *
-     * @param jsonPath the JSONPath expression containing tokens
-     * @param content the JSON document to extract values from
-     * @param pendingJsonPaths map of tokens to their JSONPath expressions
-     * @return a list of JSONPath expressions with replaced values
      */
     public static List<String> replacePendingTokens(String jsonPath, String content, Map<String, String> pendingJsonPaths) {
         log.info("Starting token replacement for JSONPath: {}", jsonPath);
-        Map<String, List<String>> expandedJsonPaths = new LinkedHashMap<>();
         JsonPathProcessor processor = new JsonPathProcessor();
-        Map<String, List<String>> resolvedTokens = processor.expandJsonPathsRecursively(pendingJsonPaths, content, expandedJsonPaths, 0);
+        Map<String, List<String>> resolvedTokens = processor.expandJsonPathsIteratively(pendingJsonPaths, content);
 
         log.info("Final resolved tokens: {}", resolvedTokens);
         return generateJsonPathCombinations(jsonPath, resolvedTokens);
     }
 
     /**
-     * Generates all possible JSONPath combinations by replacing tokens with resolved values.
-     *
-     * @param template the JSONPath template containing tokens
-     * @param tokenMappings map of tokens and their resolved values
-     * @return list of generated JSONPath expressions
+     * Generates all possible JSONPath combinations.
      */
     private static List<String> generateJsonPathCombinations(String template, Map<String, List<String>> tokenMappings) {
         List<String> results = new ArrayList<>(Collections.singletonList(template));
-        log.info("Generating JSONPath combinations for template: {}", template);
 
         for (Map.Entry<String, List<String>> entry : tokenMappings.entrySet()) {
             log.debug("Replacing token: {} with values: {}", entry.getKey(), entry.getValue());
@@ -59,93 +50,95 @@ public class JsonPathProcessor {
             }
             results = tempResults;
         }
-        log.info("Generated combinations: {}", results);
+        log.debug("Generated {} combinations.", results.size());
         return results;
     }
 
     /**
-     * Recursively resolves JSONPath expressions by replacing tokens with extracted values.
-     *
-     * @param pendingPaths map of tokens and their unresolved JSONPath expressions
-     * @param documentData the JSON document data
-     * @param expandedPaths map to store resolved paths
-     * @param depth current recursion depth
-     * @return map of resolved tokens to extracted values
+     * Iterative method to resolve JSONPath expressions and prevent StackOverflow.
      */
-    private synchronized Map<String, List<String>> expandJsonPathsRecursively(Map<String, String> pendingPaths, String documentData, Map<String, List<String>> expandedPaths, int depth) {
-        if (depth > MAX_RECURSION_DEPTH) {
-            log.warn("Max recursion depth reached ({}), stopping expansion to avoid infinite loop.", MAX_RECURSION_DEPTH);
-            return expandedPaths;
-        }
+    private Map<String, List<String>> expandJsonPathsIteratively(Map<String, String> pendingPaths, String documentData) {
+        Deque<Map<String, String>> stack = new ArrayDeque<>();
+        stack.push(new LinkedHashMap<>(pendingPaths));
 
-        log.info("Recursive call at depth {}: pendingPaths={}, expandedPaths={}", depth, pendingPaths, expandedPaths);
-        Map<String, String> unresolvedPaths = new LinkedHashMap<>(pendingPaths);
+        Map<String, List<String>> expandedPaths = new HashMap<>();
 
-        pendingPaths.forEach((key, value) -> {
-            log.debug("Processing pending path: {} with expression: {}", key, value);
-            List<String> extractedValues = extractValuesFromJson(value, documentData, expandedPaths);
-            if (!extractedValues.isEmpty()) {
-                expandedPaths.put(key, extractedValues);
-                unresolvedPaths.remove(key);
-                log.debug("Resolved {} to values: {}", key, extractedValues);
+        int depth = 0;
+        while (!stack.isEmpty() && depth <= MAX_RECURSION_DEPTH) {
+            Map<String, String> currentPaths = stack.pop();
+            Map<String, String> unresolvedPaths = new LinkedHashMap<>(currentPaths);
+
+            for (Map.Entry<String, String> entry : currentPaths.entrySet()) {
+                List<String> extractedValues = extractValuesFromJson(entry.getValue(), documentData, expandedPaths);
+                if (!extractedValues.isEmpty()) {
+                    expandedPaths.put(entry.getKey(), extractedValues);
+                    unresolvedPaths.remove(entry.getKey());
+                }
             }
-        });
 
-        if (unresolvedPaths.isEmpty()) {
-            log.info("All paths resolved at depth {}: {}", depth, expandedPaths);
-            return expandedPaths;
+            if (!unresolvedPaths.isEmpty()) {
+                stack.push(unresolvedPaths);
+            }
+            depth++;
         }
-        return expandJsonPathsRecursively(unresolvedPaths, documentData, expandedPaths, depth + 1);
+
+        if (depth > MAX_RECURSION_DEPTH) {
+            log.warn("Max recursion depth reached, some paths might be unresolved.");
+        }
+
+        return expandedPaths;
     }
 
     /**
-     * Extracts values from the JSON document based on the provided JSONPath expression.
-     *
-     * @param jsonPath the JSONPath expression
-     * @param documentData the JSON document data
-     * @param expandedPaths map of already resolved token mappings
-     * @return list of extracted values
+     * Extracts values from JSON using JSONPath.
      */
-    private synchronized List<String> extractValuesFromJson(String jsonPath, String documentData, Map<String, List<String>> expandedPaths) {
-        log.debug("Extracting values for JSONPath: {}", jsonPath);
+    private List<String> extractValuesFromJson(String jsonPath, String documentData, Map<String, List<String>> expandedPaths) {
         List<String> resolvedPaths = resolveTokensInPath(jsonPath, expandedPaths);
-        List<String> extractedValues = new LinkedList<>();
+        List<String> extractedValues = new ArrayList<>();
 
-        resolvedPaths.forEach(path -> {
-            log.debug("Evaluating JSONPath: {}", path);
-            List<?> extractedData = JsonPath.using(config).parse(documentData).read(path);
-            extractedData.forEach(value -> extractedValues.add(String.valueOf(value)));
-        });
-        log.info("Extracted values for path {}: {}", jsonPath, extractedValues);
+        for (String path : resolvedPaths) {
+            try {
+                List<?> extractedData = JsonPath.using(config).parse(documentData).read(path);
+                extractedData.forEach(value -> extractedValues.add(String.valueOf(value)));
+            } catch (Exception e) {
+                log.error("Invalid JSONPath expression: {} - Error: {}", path, e.getMessage());
+            }
+        }
+        log.debug("Extracted {} values for path {}", extractedValues.size(), jsonPath);
         return extractedValues;
     }
 
     /**
-     * Resolves tokens in the JSONPath expression using precomputed mappings.
-     *
-     * @param path the JSONPath expression containing tokens
-     * @param tokenMappings map of token values
-     * @return list of resolved JSONPath expressions
+     * Resolves tokens in JSONPath expressions.
      */
-    private synchronized List<String> resolveTokensInPath(String path, Map<String, List<String>> tokenMappings) {
-        log.debug("Resolving tokens in path: {}", path);
-        List<String> resolvedPaths = new LinkedList<>();
+    private List<String> resolveTokensInPath(String path, Map<String, List<String>> tokenMappings) {
+        List<String> resolvedPaths = new ArrayList<>();
         Matcher matcher = Pattern.compile(TOKEN_REGEX).matcher(path);
+        boolean hasTokens = false;
 
-        if (!matcher.find()) {
-            log.warn("No tokens found in path, validating JSONPath syntax.");
-            JsonPath.using(config).parse(path); // Will throw runtime exception if path is invalid
-        }
-
-        matcher.reset();
+        StringBuilder updatedPath = new StringBuilder(path);
         while (matcher.find()) {
+            hasTokens = true;
             String token = matcher.group(0);
             List<String> values = tokenMappings.getOrDefault(token, Collections.emptyList());
-            log.debug("Replacing token {} with values: {}", token, values);
-            values.forEach(value -> resolvedPaths.add(path.replace(token, value)));
+
+            if (!values.isEmpty()) {
+                for (String value : values) {
+                    resolvedPaths.add(updatedPath.toString().replace(token, value));
+                }
+            }
         }
 
-        log.info("Resolved paths: {}", resolvedPaths.isEmpty() ? Collections.singletonList(path) : resolvedPaths);
+        if (!hasTokens) {
+            // Validate JSONPath syntax safely
+            try {
+                JsonPath.using(config).parse(path);
+            } catch (Exception e) {
+                log.error("Invalid JSONPath detected: {} - Error: {}", path, e.getMessage());
+            }
+            return Collections.singletonList(path);
+        }
+
         return resolvedPaths.isEmpty() ? Collections.singletonList(path) : resolvedPaths;
     }
 }

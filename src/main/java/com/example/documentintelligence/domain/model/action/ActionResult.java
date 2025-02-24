@@ -3,6 +3,8 @@ package com.example.documentintelligence.domain.model.action;
 import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.List;
+
 @Data
 @Slf4j
 public class ActionResult {
@@ -12,4 +14,5 @@ public class ActionResult {
     private int succeededActions;
     private ActionOutcomeType outcomeType;
     private String outcome;
+    private List<String> documentExtraData;
 }
