@@ -27,7 +27,6 @@ public class CompareAction extends Action {
     private static final String ERROR_MISMATCH = "Informacao divergente do documento comprobatorio.";
     private static final String ERROR_NOT_FOUND = "Informacao nao encontrada no documento comprobatorio";
 
-    @JsonProperty("actionType")
     private final ActionType actionType = ActionType.COMPARE;
 
     public CompareAction() {
