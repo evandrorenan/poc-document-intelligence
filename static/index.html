@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Validação de Documentos</title>
     <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor/dist/jsoneditor.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@json-editor/json-editor@latest/dist/jsoneditor.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.14.0/src-noconflict/ace.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/lz-string@1.14.0/libs/lz-string.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ace-builds@1.14.0/src-noconflict/mode-json.js"></script>
+    <link rel="stylesheet" id="theme-link" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css">
+    <link rel="stylesheet" id="iconlib-link" href="https://use.fontawesome.com/releases/v5.6.1/css/all.css">
+    <style id="theme-default"></style>
+    <style id="theme-bootstrap4"></style>
 </head>
 <body>
 <div class="container">
@@ -18,30 +26,47 @@
             <option value="CNH">CNH</option>
         </select>
         <label for="modelDeploymentId">ID do Modelo de Implementação:</label>
-        <input type="text" id="modelDeploymentId" value="document-deployment-gpt-4o" readonly>
-        <label for="promptAdditionalInfo">Informações Adicionais do Prompt:</label>
-        <input type="text" id="promptAdditionalInfo">
+        <input
+                type="text"
+                id="modelDeploymentId"
+                value="document-deployment-gpt-4o"
+                readonly
+        />
+        <label for="promptAdditionalInfo"
+        >Informações Adicionais do Prompt:</label
+        >
+        <input type="text" id="promptAdditionalInfo"/>
 
         <div id="fieldsToCheckContainer">
             <h3>Campos a Verificar:</h3>
-            <button id="addFieldButton">Adicionar Campo</button>
+            <button id="addFieldButton" class="pocbutton">Adicionar Campo</button>
         </div>
     </div>
 
     <div class="section">
         <h2>Documento Base64:</h2>
-        <input type="file" id="base64document">
+        <input type="file" id="base64document"/>
     </div>
 
     <div class="section">
         <h2>Dados de Referência:</h2>
         <div id="referenceDataEditor"></div>
+        <div id="editor_holder_input"></div>
     </div>
 
-    <button id="create-input-screen">Criar Tela de Input</button>
-    <button id="submitButton">Enviar para Análise</button>
-    <div id="statusDisplay"></div>
-    <div id="editor_holder"></div>
+    <div class="section">
+        <button id="submitButton" class="pocbutton">Enviar para Análise</button>
+    </div>
+    <div class="section">
+        <div id="statusDisplay"></div>
+        <div id="result">
+            <h2>Resultado da consulta:</h2>
+            <div id="resultContent"></div>
+        </div>
+    </div>
+    <div class="section">
+        <div id="editor_holder_output"></div>
+    </div>
 </div>
 <script src="scripts.js"></script>
 </body>
