@@ -147,6 +147,7 @@ document.addEventListener("DOMContentLoaded", function () {
   function generateJSONEditor(json, editorHolder) {
 
     let option = editorHolder === "editor_holder_outputx";
+    option = true;
 
     new JSONEditor(document.getElementById(editorHolder), {
       schema: {},
@@ -168,11 +169,6 @@ document.addEventListener("DOMContentLoaded", function () {
   document
     .getElementById("addFieldButton")
     .addEventListener("click", createField);
-
-  // Existing JSON Editor initialization
-  window.onload = function() {
-    generateJSONEditor({}, "editor_holder_input");
-  };
 
   // document
   //   .getElementById("create-input-screen")
