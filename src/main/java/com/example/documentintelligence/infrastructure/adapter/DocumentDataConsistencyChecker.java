@@ -1,14 +1,15 @@
 package com.example.documentintelligence.infrastructure.adapter;
 
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
+import com.example.documentintelligence.domain.model.FieldCheckRule;
 import com.example.documentintelligence.domain.port.DocumentAnalyzerPort;
-import com.jayway.jsonpath.InvalidJsonException;
 import com.jayway.jsonpath.JsonPathException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.AZURE_OPENAI_ANALYZER;
@@ -35,14 +36,22 @@ public class DocumentDataConsistencyChecker implements DocumentAnalyzerPort {
                        .put(VALIDATE_FIELD_CONTENT_ANALYZER,
                                pathsMap);
 
+        Map<FieldCheckRule, List<String>> referencePathsMap = expandPathsToMap(currentAnalysis, referenceData);
+        Map<FieldCheckRule, List<String>> documentPathsMap = expandPathsToMap(currentAnalysis, documentData);
+
+        Map<String, Map<FieldCheckRule, List<String>>> pathsFullMap = Map.of(REFERENCE_PATHS, referencePathsMap, DOCUMENT_PATHS, documentPathsMap);
+
+        currentAnalysis.getStepResults()
+                       .put(VALIDATE_FIELD_CONTENT_ANALYZER + "Map",
+                               pathsFullMap);
+
         return currentAnalysis;
     }
 
     private static List<String> expandPaths(DocumentAnalysis currentAnalysis, String referenceData) {
         try {
             List<String> strings = currentAnalysis.getDocumentValidationRule().getFieldsToCheck().stream().flatMap(fieldCheckRule -> {
-
-                Map<String, String> pendingPaths = new LinkedHashMap<>(fieldCheckRule.getPathsToObjectKey());
+                Map < String, String > pendingPaths = new LinkedHashMap<>(fieldCheckRule.getPathsToObjectKey());
                 Stream<String> stream = JsonPathProcessor.replacePendingTokens(fieldCheckRule.getJsonPath(), referenceData, pendingPaths).stream();
                 return stream;
             }).toList();
@@ -50,5 +59,17 @@ public class DocumentDataConsistencyChecker implements DocumentAnalyzerPort {
         } catch (JsonPathException e) {
             return List.of("$");
         }
+    }
+
+    private static Map<FieldCheckRule, List<String>> expandPathsToMap(DocumentAnalysis currentAnalysis, String referenceData) {
+        Map<FieldCheckRule, List<String>> fieldCheckRuleListMap =
+            currentAnalysis.getDocumentValidationRule().getFieldsToCheck().stream()
+               .collect(Collectors.toMap(
+                   fieldCheckRule -> fieldCheckRule,
+                   fieldCheckRule -> {
+                       Map<String, String> pendingPaths = new LinkedHashMap<>(fieldCheckRule.getPathsToObjectKey());
+                       return JsonPathProcessor.replacePendingTokens(fieldCheckRule.getJsonPath(), referenceData, pendingPaths);
+                   }));
+        return fieldCheckRuleListMap;
     }
 }
