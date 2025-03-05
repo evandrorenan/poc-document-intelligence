@@ -22,6 +22,11 @@ public class JsonPathProcessor {
                                                             .options(Option.ALWAYS_RETURN_LIST)
                                                             .build();
 
+    public static <T> List<T> readPathAsList(String json, String path) {
+        new TypeRef<List<T>>() {};
+        return JsonPath.using(config).parse(json).read(path, new TypeRef<List<T>>() {});
+    }
+
     /**
      * Replaces tokens in a JSONPath expression using extracted values.
      */

@@ -40,7 +40,7 @@ public class DocumentController {
             description = "Retrieves the analysis results for a given protocol. The analysis may be in one of three states: " +
                     "PENDING (still processing), COMPLETED (analysis finished successfully), or FAILED (analysis encountered an error).")
     @ApiResponses(value = {
-            @ApiResponse(responseCode = "200", description = "Analysis results retrieved successfully"),
+            @ApiResponse(responseCode =     "200", description = "Analysis results retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "Protocol not found")
     })
     public ResponseEntity<DocumentAnalysis> getAnalysisResult(

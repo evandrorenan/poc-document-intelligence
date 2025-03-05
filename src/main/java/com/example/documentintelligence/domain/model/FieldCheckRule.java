@@ -20,7 +20,6 @@ public class FieldCheckRule {
     private ExpectedDataType expectedDataType;
     private String promptAdditionalInfo;
     private Action action;
-    private Map<String, Object> extraInfo;
 
     @AllArgsConstructor
     public enum ExpectedDataType {
@@ -30,19 +29,5 @@ public class FieldCheckRule {
         BOOLEAN(Boolean.class);
 
         private final Class<?> clazz;
-    }
-
-    public Object getExtraInfoForActionType() {
-        if (action != null && action.getActionType() != null) {
-            switch (action.getActionType()) {
-                case COMPARE:
-                    return extraInfo.get("compareInfo"); // Retrieve the specific CompareInfo
-                case LOGIC:
-                    return extraInfo.get("logicInfo"); // Retrieve the specific LogicInfo
-                default:
-                    return null;
-            }
-        }
-        return null;
     }
 }

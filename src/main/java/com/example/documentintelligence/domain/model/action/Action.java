@@ -13,20 +13,10 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 public abstract class Action {
     public enum ActionType {COMPARE, OVERRIDE, LOGIC;}
 
-    protected Object extraInfo;
-
     public Action() {
     }
 
     public abstract ActionType getActionType();
-
-    public Object getExtraInfo() {
-        return this.extraInfo;
-    }
-
-    public void setExtraInfo(Object extraInfo) {
-        this.extraInfo = extraInfo;
-    }
 
     public abstract ActionResult execute(DocumentAnalysis currentAnalysis);
 
