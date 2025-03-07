@@ -21,13 +21,9 @@ body {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-h1 {
+h1, h2 {
   color: rgb(12, 136, 30);
   text-align: center;
-}
-
-h2 {
-  color: rgb(12, 136, 30);
 }
 
 label {
@@ -36,7 +32,6 @@ label {
 }
 
 .label-bold {
-  display: flex;
   font-weight: bold;
 }
 
@@ -65,73 +60,12 @@ textarea {
   margin-bottom: 10px;
 }
 
-.form-group {
-  display: flex;  
-}
-
-.je-textarea {
-     width: -webkit-fill-available;
-     height: 50px;
- }
-
-.je-edit-json--textarea {
-    width: -webkit-fill-available;
-    height: 50px;
-}
-
-.je-modal {
-    width: -webkit-fill-available;
-    height: 130px;
-}
-
-input[type="text"] {
-    width: -webkit-fill-available;
-    padding: 10px;
-    margin: 5px;
-    font-size: 16px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-}
-
 .pocbutton:hover {
   background-color: rgb(10, 115, 25);
 }
 
 .section {
   margin-bottom: 30px;
-}
-
-#editor_holder {
-  margin-top: 20px;
-}
-
-#addFieldButton {
-  background-color: rgb(12, 136, 30);
-}
-
-#statusDisplay {
-  margin: 20px 0;
-  padding: 10px;
-  border-radius: 5px;
-  display: none;
-}
-
-.status-error {
-  background-color: #ffebee;
-  color: #c62828;
-  display: block;
-}
-
-.status-success {
-  background-color: #e8f5e9;
-  color: #2e7d32;
-  display: block;
-}
-
-.status-loading {
-  background-color: #e3f2fd;
-  color: #1565c0;
-  display: block;
 }
 
 .field-container {
@@ -166,7 +100,6 @@ hr {
   border: 2px solid #fff;
   border-bottom: 2px solid transparent;
   border-radius: 100%;
-
   animation: spin 450ms linear infinite;
 }
 
@@ -180,4 +113,20 @@ hr {
   display: none;
 }
 
+.status-error {
+  background-color: #ffebee;
+  color: #c62828;
+  display: block;
+}
 
+.status-success {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  display: block;
+}
+
+.status-loading {
+  background-color: #e3f2fd;
+  color: #1565c0;
+  display: block;
+}

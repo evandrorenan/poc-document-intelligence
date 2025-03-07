@@ -1,39 +1,106 @@
 const baseUrl = "http://localhost:8080";
-// Versão 2
 
 const documentTypeValues = {
-  // Add more types as needed
   REGISTRO_MATRICULA: {
     name: "Registro de Matrícula",
     modelDeploymentId: "document-deployment-gpt-4o",
     promptAdditionalInfo: "",
     fieldsToCheck: [
       {
-        name: "Nome do proprietário",
-        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].proprietarios[?(@.cpfCnpj=={CPF_CNPJ})].nome",
+        name: "Número da Matrícula",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].numeroMatricula",
         pathsToObjectKey: [
-          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" },
-          { key: "{CPF_CNPJ}", value: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].proprietarios[*].cpfCnpj" }
+          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "Ignore os filtros de pesquisa. propriedadesRurais e proprietários são arrays",
+        promptAdditionalInfo: "PropriedadesRurais é um array",
         actionType: "COMPARE"
       },
       {
-        name: "Área do imóvel",
-        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].area",
+        name: "Área total do imóvel",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].areaTotalImovel",
         pathsToObjectKey: [
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
         promptAdditionalInfo: "A unidade de medida deve ser hectares quadrados. Formato: [0-9.,]+?\\s*?ha. propriedadesRurais é um array",
         actionType: "COMPARE"
+      },
+      {
+        name: "Nome do imóvel",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].nomeImovel",
+        pathsToObjectKey: [
+          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "Algumas propriedades rurais podem ter seu nome declarado na matrícula. Caso não encontre, retorne esse campo com valor vazio. propriedadesRurais é um array",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Cep do endereço",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.numeroCEP",
+        pathsToObjectKey: [
+          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "O CEP possui 8 caracteres numéricos. Não utilize formatações.",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Logradouro do endereço",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.logradouro",
+        pathsToObjectKey: [
+          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Numero do endereço",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.numero",
+        pathsToObjectKey: [
+          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "Nem todas as propriedades rurais possuem número. Se não encontrar, retorne conteúdo vazio.",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Complemento do endereço",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.complemento",
+        pathsToObjectKey: [
+          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "Nem todas as propriedades rurais possuem complemento. Se não encontrar, retorne conteúdo vazio.",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Município do endereço",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.municipio",
+        pathsToObjectKey: [
+          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "",
+        actionType: "COMPARE"
+      },
+      {
+        name: "UF do endereço",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.uf",
+        pathsToObjectKey: [
+          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "",
+        actionType: "COMPARE"
       }
     ]
-  }
+  },
+
 };
 
-// Function to create a new field
 function createFieldToCheck(field, fieldCounter) {
   const fieldDiv = document.createElement("div");
   fieldDiv.className = "field-container";
@@ -69,11 +136,9 @@ function createFieldToCheck(field, fieldCounter) {
         </select>
 
         <label for="promptInfo-${fieldCounter}">Informações adicionais para o Prompt:</label>
-        <input type="text" id="promptInfo-${fieldCounter}" class="field-promptinfo" value="${field.promptAdditionalInfo}">
-        </input>
+        <input type="text" id="promptInfo-${fieldCounter}" class="field-promptinfo" value="${field.promptAdditionalInfo}"></input>
 
-        <section class="paths-list" id="paths-list-${fieldCounter}">
-        </section>
+        <section class="paths-list" id="paths-list-${fieldCounter}"></section>
 
         <label for="actionType-${fieldCounter}">Tipo de Ação:</label>
         <select id="actionType-${fieldCounter}" class="field-actiontype" value="${field.actionType}">
@@ -86,60 +151,48 @@ function createFieldToCheck(field, fieldCounter) {
   `;
 
   document.getElementById("fieldsToCheckContainer").appendChild(fieldDiv);
-
 }
 
 function handleDocumentTypeChange() {
   const selectedType = this.value;
 
-  // Reset fields container
   const fieldsContainer = document.getElementById("fieldsToCheckContainer");
   const existingFields = fieldsContainer.querySelectorAll(".field-container");
   existingFields.forEach(field => field.remove());
 
-  // If REGISTRO_MATRICULA is selected, auto-populate fields
   if (selectedType === "REGISTRO_MATRICULA") {
     const typeConfig = documentTypeValues[selectedType];
 
-    // Set model deployment ID and prompt info
-    document.getElementById("modelDeploymentId").value = typeConfig.modelDeploymentId;
-    // document.getElementById("promptAdditionalInfo").value = typeConfig.promptAdditionalInfo;
+    document.getElementById("modelDeploymentId").textContent = typeConfig.modelDeploymentId;
 
-    // Dynamically create fields
     typeConfig.fieldsToCheck.forEach((fieldsToCheck, index) => {
       createFieldToCheck(fieldsToCheck, index + 1);
     });
 
-    // Populate the created fields with predefined values
     typeConfig.fieldsToCheck.forEach((fieldConfig, index) => {
       const fieldId = index + 1;
 
-      // Set basic field values
       document.getElementById(`name-${fieldId}`).value = fieldConfig.name;
       document.getElementById(`jsonPath-${fieldId}`).value = fieldConfig.jsonPath;
       document.getElementById(`expectedDataType-${fieldId}`).value = fieldConfig.expectedDataType;
       document.getElementById(`promptInfo-${fieldId}`).value = fieldConfig.promptAdditionalInfo;
       document.getElementById(`actionType-${fieldId}`).value = fieldConfig.actionType;
 
-      // Populate paths to object key
       const pathsList = document.getElementById(`paths-list-${fieldId}`);
-      pathsList.innerHTML = ""; // Clear existing rows
-      fieldConfig.pathsToObjectKey.forEach((path, pathIndex) => {
-        const newRow = createPathToObjectKeyRow(fieldId, pathIndex + 1, path.key, path.value);
-        pathsList.insertAdjacentHTML("beforeend", newRow);
-      });
+      pathsList.innerHTML = "";
+      // fieldConfig.pathsToObjectKey.forEach((path, pathIndex) => {
+        // const newRow = createPathToObjectKeyRow(fieldId, pathIndex + 1, path.key, path.value);
+        // pathsList.insertAdjacentHTML("beforeend", newRow);
+      // });
     });
   }
 }
 
 document.addEventListener("DOMContentLoaded", function () {
-  // Modify the existing event listener to handle document type changes
   document.getElementById("documentType").addEventListener("change", handleDocumentTypeChange);
   window.jsonEditorInput = generateJSONEditor({}, "editor_holder_input");
 });
 
-
-// Function to add a new path key row
 function addPathToObjectKeyRow(fieldId) {
   const pathsList = document.getElementById(`paths-list-${fieldId}`);
   const pathKeyCounter = pathsList.children.length + 1;
@@ -147,11 +200,8 @@ function addPathToObjectKeyRow(fieldId) {
   pathsList.insertAdjacentHTML("beforeend", newRow);
 }
 
-// Function to remove a path key row
 function removePathToObjectKeyRow(fieldId, pathKeyCounter) {
-  const row = document.getElementById(
-    `path-key-row-${fieldId}-${pathKeyCounter}`
-  );
+  const row = document.getElementById(`path-key-row-${fieldId}-${pathKeyCounter}`);
   if (row) {
     row.remove();
   }
@@ -160,7 +210,6 @@ function removePathToObjectKeyRow(fieldId, pathKeyCounter) {
 window.addPathToObjectKeyRow = addPathToObjectKeyRow;
 window.removePathToObjectKeyRow = removePathToObjectKeyRow;
 
-// Function to remove a field
 window.removeField = function (fieldId) {
   const fieldElement = document.getElementById(`field-${fieldId}`);
   if (fieldElement) {
@@ -168,30 +217,25 @@ window.removeField = function (fieldId) {
   }
 };
 
-// Generate JSON editor:
 function generateJSONEditor(json, editorHolder) {
+  const option = editorHolder === "editor_holder_output";
 
-  let option = editorHolder === "editor_holder_outputx";
-
-  var editor = new JSONEditor(document.getElementById(editorHolder), {
+  return new JSONEditor(document.getElementById(editorHolder), {
     schema: {},
     startval: json,
-    disable_array_add: option,
+    disable_array_add: true,
     disable_array_delete: true,
     disable_array_delete_all_rows: true,
     disable_array_delete_last_row: true,
     disable_array_reorder: true,
-    enable_array_copy: false,
+    enable_array_copy: true,
     disable_collapse: true,
     disable_edit_json: false,
     disable_properties: true,
     mode: "tree"
   });
-
-  return editor;
 }
 
-// File to base64 conversion
 function fileToBase64(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
@@ -201,22 +245,17 @@ function fileToBase64(file) {
   });
 }
 
-// Status display functions
 function updateStatus(message, type) {
   const statusDiv = document.getElementById("statusDisplay");
   statusDiv.textContent = message;
   statusDiv.className = `status-${type}`;
 }
 
-// Polling function
 async function pollAnalysisStatus(protocol) {
   try {
-    const response = await fetch(
-      `http://localhost:8080/api/documents/analysis/${protocol}`,
-      {
-        headers: { accept: "*/*" },
-      }
-    );
+    const response = await fetch(`${baseUrl}/api/documents/analysis/${protocol}`, {
+      headers: { accept: "*/*" }
+    });
 
     const data = await response.json();
 
@@ -227,6 +266,20 @@ async function pollAnalysisStatus(protocol) {
 
     if (data.status === "COMPLETED") {
       updateStatus("Análise concluída com sucesso!", "success");
+      if (!data.extractedData) {
+        updateStatus("Nenhum dado extra extraído", "error");
+        return;
+      }
+
+      document.getElementById("editor_holder_output").innerHTML = "";
+      generateJSONEditor(JSON.parse(data.extractedData.outcome), "editor_holder_output");
+
+      document.getElementById("resultContent").innerHTML = getResponseElements(
+        data.extractedData.failedActions,
+        data.extractedData.succeededActions,
+        data.extractedData.outcomeType,
+        data.extractedData.documentExtraData
+      );
       return;
     }
 
@@ -237,7 +290,6 @@ async function pollAnalysisStatus(protocol) {
   }
 }
 
-// Function to get fields data
 function getFieldsData() {
   const fields = [];
   document.querySelectorAll(".field-container").forEach((container) => {
@@ -245,22 +297,29 @@ function getFieldsData() {
     fields.push({
       name: document.getElementById(`name-${fieldId}`).value,
       jsonPath: document.getElementById(`jsonPath-${fieldId}`).value,
-      expectedDataType: document.getElementById(`expectedDataType-${fieldId}`)
-        .value,
-      promptAdditionalInfo: document.getElementById(`promptInfo-${fieldId}`)
-        .value,
+      expectedDataType: document.getElementById(`expectedDataType-${fieldId}`).value,
+      promptAdditionalInfo: document.getElementById(`promptInfo-${fieldId}`).value,
+      pathsToObjectKey: Object.assign({}, ...
+
+        Array.from(document.getElementById(`paths-container-${fieldId}`).children)
+          .filter(child => child.tagName.toLowerCase() != 'label')
+          .map((pathRow) => {
+            const key = pathRow.querySelector(".path-key").value;
+            const value = pathRow.querySelector(".path-value").value;
+            return { [key]: value };
+          })
+      ),
       action: {
-        actionType: document.getElementById(`actionType-${fieldId}`).value,
-      },
+        actionType: document.getElementById(`actionType-${fieldId}`).value
+      }
     });
   });
   return fields;
 }
 
-//  Adds a loader inbetween the button text:
 function showLoader(type, id) {
   if (type === "show") {
-    let loader = `<span class="spinner"></span>`;
+    const loader = `<span class="spinner"></span>`;
     document.getElementById(id).innerHTML = loader;
   } else {
     document.getElementById(id).innerHTML = "Enviar para Análise";
@@ -271,49 +330,39 @@ async function getDocumentAnalysis(protocol) {
   showLoader("show", "submitButton");
 
   try {
-    const request = fetch(`${baseUrl}/api/documents/analysis/${protocol}`, {
+    const request = await fetch(`${baseUrl}/api/documents/analysis/${protocol}`, {
       method: "GET",
-      headers: {
-        accept: "*/*",
-      },
+      headers: { accept: "*/*" }
     });
 
-    const response = (await request).json();
+    const response = await request.json();
     showLoader("hide", "submitButton");
 
     return response;
   } catch (err) {
-    throw new Error("error.unknown");
+    showLoader("hide", "submitButton");
+    updateStatus(`Erro: ${err.message}`, "error");
+    throw err;
   }
 }
 
-//  Prepare the HTML element:
-function getResponseElements(
-  failedActions,
-  succeededActions,
-  outcomeType,
-  documentExtraData
-) {
+function getResponseElements(failedActions, succeededActions, outcomeType, documentExtraData) {
   return `
-            <div class="response-element">
-                <p><b>Ações que falharam:</b> ${failedActions}</p>
-                <p><b>Ações que tiveram sucesso:</b> ${succeededActions}</p>
-                <p><b>Tipo de resultado:</b> ${outcomeType}</p>
-                <p><b>Dados extras do documento:</b> </p>
-                ${documentExtraData.map((item) => `<li>${item}</li>`)}
-            </div>
-        `;
+    <div class="response-element">
+        <p><b>Ações que falharam:</b> ${failedActions}</p>
+        <p><b>Ações que tiveram sucesso:</b> ${succeededActions}</p>
+        <p><b>Tipo de resultado:</b> ${outcomeType}</p>
+        <p><b>Dados extras do documento:</b> </p>
+        ${documentExtraData.map((item) => `<li>${item}</li>`).join('')}
+    </div>
+  `;
 }
 
 async function postDocumentAnalysis() {
   showLoader("show", "submitButton");
 
-  // Get reference data from JSON editor
-  const referenceData = window.jsonEditorInput ?
-    JSON.stringify(window.jsonEditorInput.getValue()) :
-    JSON.stringify({});
+  const referenceData = window.jsonEditorInput ? JSON.stringify(window.jsonEditorInput.getValue()) : JSON.stringify({});
 
-  // Convert file to base64
   const fileInput = document.getElementById('base64document');
   const file = fileInput.files[0];
 
@@ -323,38 +372,12 @@ async function postDocumentAnalysis() {
 
   const base64Document = await fileToBase64(file);
 
-  // Collect fields to check dynamically
-  const fieldsToCheck = [];
-  document.querySelectorAll(".field-container").forEach((container) => {
-    const fieldId = container.id.split("-")[1];
-
-    // Collect path to object keys
-    const pathsToObjectKey = {};
-    container.querySelectorAll(".path-key-row").forEach((pathRow) => {
-      const key = pathRow.querySelector(".path-key").value;
-      const value = pathRow.querySelector(".path-value").value;
-      if (key && value) {
-        pathsToObjectKey[key] = value;
-      }
-    });
-
-    fieldsToCheck.push({
-      name: document.getElementById(`name-${fieldId}`).value,
-      jsonPath: document.getElementById(`jsonPath-${fieldId}`).value,
-      pathsToObjectKey: pathsToObjectKey,
-      expectedDataType: document.getElementById(`expectedDataType-${fieldId}`).value,
-      promptAdditionalInfo: document.getElementById(`promptInfo-${fieldId}`).value,
-      action: {
-        actionType: document.getElementById(`actionType-${fieldId}`).value,
-        extraInfo: "" // Can be adjusted as needed
-      }
-    });
-  });
+  const fieldsToCheck = getFieldsData();
 
   const requestBody = {
     documentValidationRule: {
       documentType: document.getElementById("documentType").value,
-      modelDeploymentId: "document-deployment-gpt-4o", // You may want to make this configurable
+      modelDeploymentId: "document-deployment-gpt-4o",
       promptAdditionalInfo: document.getElementById("promptAdditionalInfo").value,
       fieldsToCheck: fieldsToCheck
     },
@@ -367,7 +390,7 @@ async function postDocumentAnalysis() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "accept": "*/*"
+        accept: "*/*"
       },
       body: JSON.stringify(requestBody)
     });
@@ -388,31 +411,29 @@ async function postDocumentAnalysis() {
   }
 }
 
-// Submit handler
-document
-  .getElementById("submitButton")
-  .addEventListener("click", async function () {
-    // I don't know what i need to send in the body, so i'm sending an empty object
-    try {
-      const protocol = await postDocumentAnalysis({});
-      console.log(protocol);
+document.getElementById("submitButton").addEventListener("click", async function (event) {
+  event.preventDefault();
+  try {
+    const protocol = await postDocumentAnalysis();
+    console.log(protocol);
 
-      //  After getting the protocol, start polling the status:
-      const response = await getDocumentAnalysis(protocol);
+    const response = await getDocumentAnalysis(protocol);
 
-      document.getElementById("result").style.display = "block";
-      const resultContainer = document.getElementById("resultContent");
+    pollAnalysisStatus(protocol);
 
-      generateJSONEditor(JSON.parse(response.outcome), "editor_holder_output");
+    document.getElementById("result").style.display = "block";
+    const resultContainer = document.getElementById("resultContent");
 
-      resultContainer.innerHTML = getResponseElements(
-        response.failedActions,
-        response.succeededActions,
-        response.outcomeType,
-        response.documentExtraData
-      );
-    } catch (error) {
-      console.error("Error in document analysis:", error);
-      updateStatus(`Erro: ${error.message}`, "error");
-    }
-  });
+    // generateJSONEditor(JSON.parse(response.outcome), "editor_holder_output");
+
+    resultContainer.innerHTML = getResponseElements(
+      response.failedActions,
+      response.succeededActions,
+      response.outcomeType,
+      response.documentExtraData.replace(": ", ":\n")
+    );
+  } catch (error) {
+    console.error("Error in document analysis:", error);
+    updateStatus(`Erro: ${error.message}`, "error");
+  }
+});
