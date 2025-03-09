@@ -21,9 +21,14 @@ body {
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
 
-h1, h2 {
+h1 {
   color: rgb(12, 136, 30);
   text-align: center;
+} 
+
+h2 {
+  color: rgb(12, 136, 30);
+  text-align: left;
 }
 
 label {
@@ -38,7 +43,7 @@ label {
 input,
 select,
 textarea {
-  width: 100%;
+  width: -webkit-fill-available;
   padding: 10px;
   margin-bottom: 20px;
   border: 1px solid #ccc;
@@ -107,10 +112,6 @@ hr {
   to {
     transform: rotate(360deg);
   }
-}
-
-#result {
-  display: none;
 }
 
 .status-error {

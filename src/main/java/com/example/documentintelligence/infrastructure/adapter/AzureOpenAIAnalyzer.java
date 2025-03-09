@@ -42,9 +42,38 @@ public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
         this.azureOpenAIPrompt = azureOpenAIPrompt;
     }
 
+    /*
+    Avalie o seguinte conteúdo e extraia as seguintes informações específicas em formato JSON, garantindo que
+     os nomes dos campos sejam interpretados como caminhos para a criação de objetos aninhados:
+
+     %s
+
+     Conteúdo a ser avaliado:
+
+     %s
+
+     Observações importantes:
+
+     * Os nomes dos campos no JSON de retorno devem ser interpretados como caminhos para a criação de objetos aninhados,
+     exceto o "$".
+     Exemplo: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].proprietarios[?(@.seq=={SEQ})].nome", produz
+     o seguinte json:
+     { "propriedadesRurais": [ { "proprietarios": [ { "nome": "<texto extraído>" } ] } ] }
+
+     * Se alguma das informações solicitadas não for encontrada no texto JSON, o campo correspondente no
+     JSON de retorno deve conter o valor null.
+     * O texto JSON de entrada pode conter outras informações além das solicitadas. Ignore essas informações
+     adicionais.
+     A resposta deve conter somente o json com as informações solicitadas. Sem nenhum comentário adicional.
+     Deve iniciar com "{" e terminar com "}"
+     * Não utilize nenhum tipo de formatação de campo, a não ser que seja explicitamente solicitado.
+     Por exemplo, CPFs, CEPs e CNPJs não devem ter pontos ou hifens.
+     */
     @Override
     public DocumentAnalysis analyzeDocument(DocumentAnalysis currentAnalysis) {
         try {
+
+            String promptAdditionalInfo = currentAnalysis.getDocumentValidationRule().getPromptAdditionalInfo();
 
             String fieldList = currentAnalysis.getDocumentValidationRule().getFieldsToCheck().stream()
               .map(field -> {
@@ -59,7 +88,7 @@ public class AzureOpenAIAnalyzer implements DocumentAnalyzerPort {
 
             String content = String.join("\n", currentAnalysis.getStepResults().get(AZURE_DOCUMENT_INTELLIGENCE_ANALYZER).toString());
 
-            String formattedPrompt = String.format(azureOpenAIPrompt, fieldList, content);
+            String formattedPrompt = String.format(azureOpenAIPrompt, fieldList, content, promptAdditionalInfo);
 
             List<ChatRequestMessage> messages = new ArrayList<>();
             messages.add(new ChatRequestSystemMessage(azureOpenAIContext));

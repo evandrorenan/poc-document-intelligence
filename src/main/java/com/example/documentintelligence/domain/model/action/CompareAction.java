@@ -124,6 +124,10 @@ public class CompareAction extends Action {
             List<String> refValues = JsonPath.using(config).parse(referenceData).read(path);
             List<String> docValues = JsonPath.using(config).parse(documentData).read(path);
 
+            if (refValues.size() == 0 && docValues.size() == 0) {
+                return 0;
+            }
+
             if (refValues.size() == 0) {
                 actionResult.getDocumentExtraData().add(path + ": " + docValues);
                 return 1;
@@ -135,7 +139,7 @@ public class CompareAction extends Action {
                 return 1;
             }
 
-            if (!refValues.get(0).equalsIgnoreCase(docValues.get(0))) {
+            if (!String.valueOf(refValues.get(0)).equalsIgnoreCase(String.valueOf(docValues.get(0)))) {
                 referenceData = addErrorToReferenceData(path, ERROR_MISMATCH, actionResult);
                 actionResult.setOutcome(referenceData);
                 return 1;
@@ -173,7 +177,7 @@ public class CompareAction extends Action {
             Map<String, Object> targetNode = nodes.get(0);
             targetNode.put(fieldName + "Erro", errorMessage);
 
-            documentContext.set(parentPath, nodes);
+            documentContext.set(parentPath, targetNode);
             referenceData = documentContext.jsonString();
 
         } catch (PathNotFoundException e) {

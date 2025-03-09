@@ -1,11 +1,161 @@
 const baseUrl = "http://localhost:8080";
 
+const exampleDocument = {
+    "codigoInstituicaoFinanceira": 237,
+    "modalidadeCredito": "CPRF",
+    "numeroCPFCNPJ": "32157456821",
+    "numeroPedido": 30016065,
+    "dadosCadastraisCliente": {
+        "nomeCliente": "EVANDRO RENAN NOGUEIRA GUIMARÃES",
+        "documentosIdentificacao": [
+            {
+                "numeroDocumento": "334588686",
+                "orgaoEmissor": "SSP",
+                "ufEmissao": "MG"
+            }
+        ],
+        "enderecoCliente": [
+            {
+                "numeroSequencia": 0,
+                "numeroCEP": "05565200",
+                "logradouro": "R EUDORO LINCOLN",
+                "numero": "480",
+                "complemento": "APTO 31",
+                "bairro": "BELA VISTA",
+                "municipio": "SAO PAULO",
+                "uf": "SP"
+            }
+        ]
+    },
+    "propriedadesRurais": [
+        {
+            "nomeImovel": "Fazenda 6610",
+            "numeroMatricula": "6610",
+            "areaTotalImovel": 600,
+            "proprietarios": [
+                {
+                    "cpfCnpj": "48827495649",
+                    "nome": "José Jacinto"
+                }
+            ]
+        }
+    ]
+}
+
 const documentTypeValues = {
-  REGISTRO_MATRICULA: {
-    name: "Registro de Matrícula",
+  RG: {
+    name: "RG",
     modelDeploymentId: "document-deployment-gpt-4o",
     promptAdditionalInfo: "",
     fieldsToCheck: [
+      {
+        name: "Órgão emissor do documento",
+        jsonPath: "$.dadosCadastraisCliente.documentosIdentificacao[?(@.numeroDocumento=={NUMERO_DOCUMENTO})].orgaoEmissor",
+        pathsToObjectKey: [
+          { key: "{NUMERO_DOCUMENTO}", value: "$.dadosCadastraisCliente.documentosIdentificacao[*].numeroDocumento" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "documentosIdentificação é um array. Não inclua aqui a sigla da UF do órgão emissor.",
+        actionType: "COMPARE"
+      },
+      {
+        name: "UF de emissão do documento",
+        jsonPath: "$.dadosCadastraisCliente.documentosIdentificacao[?(@.numeroDocumento=={NUMERO_DOCUMENTO})].ufEmissao",
+        pathsToObjectKey: [
+          { key: "{NUMERO_DOCUMENTO}", value: "$.dadosCadastraisCliente.documentosIdentificacao[*].numeroDocumento" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "documentosIdentificação é um array",
+        actionType: "COMPARE"
+      },
+    ]
+  },
+  COMPROVANTE_DE_ENDERECO: {
+    name: "Comprovante de endereço",
+    modelDeploymentId: "document-deployment-gpt-4o",
+    promptAdditionalInfo: "",
+    fieldsToCheck: [
+      {
+        name: "Logradouro do endereço",
+        jsonPath: "$.dadosCadastraisCliente.enderecoCliente[?(@.numeroCEP==\"{NUMERO_CEP}\")].logradouro",
+        pathsToObjectKey: [
+          { key: "{NUMERO_CEP}", value: "$.dadosCadastraisCliente.enderecoCliente[*].numeroCEP" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "enderecoCliente é um array",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Número do endereço",
+        jsonPath: "$.dadosCadastraisCliente.enderecoCliente[?(@.numeroCEP==\"{NUMERO_CEP}\")].numero",
+        pathsToObjectKey: [
+          { key: "{NUMERO_CEP}", value: "$.dadosCadastraisCliente.enderecoCliente[*].numeroCEP" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "enderecoCliente é um array. Se o número do imóvel não estiver explícito, deixe este campo vazio. Não inclua aqui dados complementares como bloco, torre, andar, sala, casa, fundos, etc",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Complemento do endereço",
+        jsonPath: "$.dadosCadastraisCliente.enderecoCliente[?(@.numeroCEP==\"{NUMERO_CEP}\")].complemento",
+        pathsToObjectKey: [
+          { key: "{NUMERO_CEP}", value: "$.dadosCadastraisCliente.enderecoCliente[*].numeroCEP" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "enderecoCliente é um array. Se o complemento do imóvel não estiver explícito, deixe este campo vazio. Inclua aqui dados complementares como bloco, torre, andar, sala, casa, fundos, etc",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Bairro do endereço",
+        jsonPath: "$.dadosCadastraisCliente.enderecoCliente[?(@.numeroCEP==\"{NUMERO_CEP}\")].bairro",
+        pathsToObjectKey: [
+          { key: "{NUMERO_CEP}", value: "$.dadosCadastraisCliente.enderecoCliente[*].numeroCEP" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "enderecoCliente é um array",
+        actionType: "COMPARE"
+      },
+      {
+        name: "Município do endereço",
+        jsonPath: "$.dadosCadastraisCliente.enderecoCliente[?(@.numeroCEP==\"{NUMERO_CEP}\")].municipio",
+        pathsToObjectKey: [
+          { key: "{NUMERO_CEP}", value: "$.dadosCadastraisCliente.enderecoCliente[*].numeroCEP" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "enderecoCliente é um array",
+        actionType: "COMPARE"
+      },
+      {
+        name: "UF do endereço",
+        jsonPath: "$.dadosCadastraisCliente.enderecoCliente[?(@.numeroCEP==\"{NUMERO_CEP}\")].uf",
+        pathsToObjectKey: [
+          { key: "{NUMERO_CEP}", value: "$.dadosCadastraisCliente.enderecoCliente[*].numeroCEP" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "enderecoCliente é um array",
+        actionType: "COMPARE"
+      }
+    ]
+  },
+  REGISTRO_MATRICULA: {
+    name: "Registro de Matrícula",
+    modelDeploymentId: "document-deployment-gpt-4o",
+    promptAdditionalInfo: `
+    O conteúdo pode mencionar antigos proprietários responsáveis pela venda dos proprietários atuais, ignore-os e retorne somente os proprietários atuais.\nDados de retorno devem respeitar o schema abaixo: \n
+{ \"$schema\": \"http://json-schema.org/draft-07/schema#\", \"type\": \"object\", \"properties\": { \"codigoInstituicaoFinanceira\": { \"type\": \"integer\" }, \"modalidadeCredito\": { \"type\": \"string\" }, \"numeroCPFCNPJ\": { \"type\": \"string\", \"pattern\": \"^\\\\d{11,14}$\" }, \"numeroPedido\": { \"type\": \"integer\" }, \"dadosCadastraisCliente\": { \"type\": \"object\", \"properties\": { \"nomeCliente\": { \"type\": \"string\" }, \"documentosIdentificacao\": { \"type\": \"array\", \"items\": { \"type\": \"object\", \"properties\": { \"numeroDocumento\": { \"type\": \"string\" }, \"orgaoEmissor\": { \"type\": \"string\" }, \"ufEmissao\": { \"type\": \"string\", \"pattern\": \"^[A-Z]{2}$\" } } } }, \"enderecoCliente\": { \"type\": \"array\", \"items\": { \"type\": \"object\", \"properties\": { \"numeroSequencia\": { \"type\": \"integer\" }, \"numeroCEP\": { \"type\": \"string\", \"pattern\": \"^\\\\d{8}$\" }, \"logradouro\": { \"type\": \"string\" }, \"numero\": { \"type\": \"string\" }, \"complemento\": { \"type\": \"string\" }, \"bairro\": { \"type\": \"string\" }, \"municipio\": { \"type\": \"string\" }, \"uf\": { \"type\": \"string\", \"pattern\": \"^[A-Z]{2}$\" } } } } }, \"required\": [\"nomeCliente\", \"documentosIdentificacao\", \"enderecoCliente\"] }, \"propriedadesRurais\": { \"type\": \"array\", \"items\": { \"type\": \"object\", \"properties\": { \"nomeImovel\": { \"type\": \"string\" }, \"numeroMatricula\": { \"type\": \"string\" }, \"areaTotalImovel\": { \"type\": \"string\" }, \"proprietarios\": { \"type\": \"array\", \"items\": { \"type\": \"object\", \"properties\": { \"cpfCnpj\": { \"type\": \"string\", \"pattern\": \"^\\\\d{11,14}$\" }, \"nome\": { \"type\": \"string\" } }, \"required\": [\"cpfCnpj\", \"nome\"] } } } } } }}
+    `,
+    fieldsToCheck: [
+      {
+        name: "Nome do proprietário",
+        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].proprietarios[?(@.cpfCnpj=={CPF_CNPJ})].nome",
+        pathsToObjectKey: [
+            { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" },
+            { key: "{CPF_CNPJ}", value: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].proprietarios[*].cpfCnpj" }
+        ],
+        expectedDataType: "STRING",
+        promptAdditionalInfo: "Ignore os filtros de pesquisa. propriedadesRurais e proprietários são arrays. O texto pode mencionar o cônjuge do proprietário somente para registro, ignore-os. Retorne o nome do cônjuge somente se ele for mencionado especificamente como proprietário.",
+        actionType: "COMPARE"        
+      },
       {
         name: "Número da Matrícula",
         jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].numeroMatricula",
@@ -13,7 +163,7 @@ const documentTypeValues = {
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "PropriedadesRurais é um array",
+        promptAdditionalInfo: "PropriedadesRurais é um array.",
         actionType: "COMPARE"
       },
       {
@@ -23,7 +173,7 @@ const documentTypeValues = {
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "A unidade de medida deve ser hectares quadrados. Formato: [0-9.,]+?\\s*?ha. propriedadesRurais é um array",
+        promptAdditionalInfo: "A unidade de medida deve ser hectares quadrados. Formato: [0-9.,]+?\\s{1}ha. propriedadesRurais é um array.",
         actionType: "COMPARE"
       },
       {
@@ -43,7 +193,7 @@ const documentTypeValues = {
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "O CEP possui 8 caracteres numéricos. Não utilize formatações.",
+        promptAdditionalInfo: "O CEP possui 8 caracteres numéricos. Não utilize formatações. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno.",
         actionType: "COMPARE"
       },
       {
@@ -53,7 +203,7 @@ const documentTypeValues = {
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "",
+        promptAdditionalInfo: "endereco é um array.  Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno.",
         actionType: "COMPARE"
       },
       {
@@ -63,7 +213,7 @@ const documentTypeValues = {
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "Nem todas as propriedades rurais possuem número. Se não encontrar, retorne conteúdo vazio.",
+        promptAdditionalInfo: "endereco é um array.  Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno. Não inclua aqui dados complementares como bloco, torre, andar, sala, casa, fundos, etc.",
         actionType: "COMPARE"
       },
       {
@@ -73,7 +223,7 @@ const documentTypeValues = {
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "Nem todas as propriedades rurais possuem complemento. Se não encontrar, retorne conteúdo vazio.",
+        promptAdditionalInfo: "endereco é um array. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null. Inclua aqui dados complementares como bloco, torre, andar, sala, casa, fundos, etc.",
         actionType: "COMPARE"
       },
       {
@@ -83,7 +233,7 @@ const documentTypeValues = {
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "",
+        promptAdditionalInfo: "endereco é um array. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null.",
         actionType: "COMPARE"
       },
       {
@@ -93,13 +243,39 @@ const documentTypeValues = {
           { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
         ],
         expectedDataType: "STRING",
-        promptAdditionalInfo: "",
+        promptAdditionalInfo: "endereco é um array. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null.",
         actionType: "COMPARE"
       }
     ]
   },
 
 };
+
+
+function loadExample() {
+  window.jsonEditorInput.setValue(exampleDocument);
+}
+
+function switchOutputInputJson() {
+  const outputJson = window.jsonEditorOutput.getValue();
+  window.jsonEditorInput.setValue(outputJson);
+}
+
+function toggleAccordionBody(element) {
+  const fieldCounter = element.getAttribute("data-field-index");
+  const accordionBody = document.getElementById(`content-${fieldCounter}`);
+  const accordionHead = document.getElementById(`accordion-head-${fieldCounter}`);
+  
+  if (!accordionBody) return;
+
+  if (accordionBody.style.display === "block" || accordionBody.style.display === "") {
+    accordionBody.style.display = "none";
+    accordionHead.textContent = "+ " + document.getElementById("name-" + fieldCounter).value;
+  } else {
+    accordionBody.style.display = "block";
+    accordionHead.textContent = "- ";
+  }
+}
 
 function createFieldToCheck(field, fieldCounter) {
   const fieldDiv = document.createElement("div");
@@ -116,6 +292,12 @@ function createFieldToCheck(field, fieldCounter) {
 
   fieldDiv.innerHTML = `
     <div class="field-group">
+      <div class="accordionHead" id="accordion-head-${fieldCounter}" onclick="toggleAccordionBody(this)" data-field-index="${fieldCounter}" />
+        - 
+      </div>
+
+      <div id="content-${fieldCounter}" class="accordionBody">
+
         <label for="name-${fieldCounter}" class="label-bold">Nome do Campo:</label>
         <input type="text" id="name-${fieldCounter}" class="field-name" value="${field.name}"></input>
 
@@ -146,8 +328,8 @@ function createFieldToCheck(field, fieldCounter) {
             <option value="OVERRIDE">Sobrepor</option>
             <option value="LOGIC">Aplicar lógica</option>
         </select>
+      </div>
     </div>
-    <hr>
   `;
 
   document.getElementById("fieldsToCheckContainer").appendChild(fieldDiv);
@@ -160,10 +342,11 @@ function handleDocumentTypeChange() {
   const existingFields = fieldsContainer.querySelectorAll(".field-container");
   existingFields.forEach(field => field.remove());
 
-  if (selectedType === "REGISTRO_MATRICULA") {
+  if (selectedType != "") {
     const typeConfig = documentTypeValues[selectedType];
 
-    document.getElementById("modelDeploymentId").textContent = typeConfig.modelDeploymentId;
+    document.getElementById("modelDeploymentId").value = typeConfig.modelDeploymentId;
+    document.getElementById("promptAdditionalInfo").textContent = typeConfig.promptAdditionalInfo;
 
     typeConfig.fieldsToCheck.forEach((fieldsToCheck, index) => {
       createFieldToCheck(fieldsToCheck, index + 1);
@@ -229,7 +412,7 @@ function generateJSONEditor(json, editorHolder) {
     disable_array_delete_last_row: true,
     disable_array_reorder: true,
     enable_array_copy: true,
-    disable_collapse: true,
+    disable_collapse: false,
     disable_edit_json: false,
     disable_properties: true,
     mode: "tree"
@@ -261,18 +444,27 @@ async function pollAnalysisStatus(protocol) {
 
     if (response.status >= 400) {
       updateStatus(`Erro: ${data.message || "Erro na análise"}`, "error");
+      showLoader("hide", "submitButton");
+      document.getElementById("resultSection").style.display = "block";
+      document.getElementById("editor_holder_output").innerHTML = "";
+  
       return;
     }
 
-    if (data.status === "COMPLETED") {
+    if (data.status !== "PENDING") {
       updateStatus("Análise concluída com sucesso!", "success");
+      showLoader("hide", "submitButton");
+      document.getElementById("resultSection").style.display = "block";
+
       if (!data.extractedData) {
         updateStatus("Nenhum dado extra extraído", "error");
+        document.getElementById("resultSection").style.display = "block";
+        document.getElementById("editor_holder_output").innerHTML = "";
         return;
       }
 
       document.getElementById("editor_holder_output").innerHTML = "";
-      generateJSONEditor(JSON.parse(data.extractedData.outcome), "editor_holder_output");
+      window.jsonEditorOutput = generateJSONEditor(JSON.parse(data.extractedData.outcome), "editor_holder_output");
 
       document.getElementById("resultContent").innerHTML = getResponseElements(
         data.extractedData.failedActions,
@@ -327,7 +519,6 @@ function showLoader(type, id) {
 }
 
 async function getDocumentAnalysis(protocol) {
-  showLoader("show", "submitButton");
 
   try {
     const request = await fetch(`${baseUrl}/api/documents/analysis/${protocol}`, {
@@ -336,11 +527,9 @@ async function getDocumentAnalysis(protocol) {
     });
 
     const response = await request.json();
-    showLoader("hide", "submitButton");
 
     return response;
   } catch (err) {
-    showLoader("hide", "submitButton");
     updateStatus(`Erro: ${err.message}`, "error");
     throw err;
   }
@@ -349,17 +538,22 @@ async function getDocumentAnalysis(protocol) {
 function getResponseElements(failedActions, succeededActions, outcomeType, documentExtraData) {
   return `
     <div class="response-element">
-        <p><b>Ações que falharam:</b> ${failedActions}</p>
-        <p><b>Ações que tiveram sucesso:</b> ${succeededActions}</p>
         <p><b>Tipo de resultado:</b> ${outcomeType}</p>
         <p><b>Dados extras do documento:</b> </p>
         ${documentExtraData.map((item) => `<li>${item}</li>`).join('')}
+        <p><b>Dados de referência atualizados:</b> </p>
+        <span class="je-header je-object__title">
+            <button type="button" class="json-editor-btn-collapse json-editor-btntype-toggle" onclick="switchOutputInputJson()">
+                <span>Usar no próximo input</span>
+            </button>
+        </span>
     </div>
   `;
 }
 
 async function postDocumentAnalysis() {
   showLoader("show", "submitButton");
+  document.getElementById("resultSection").style.display = "none";
 
   const referenceData = window.jsonEditorInput ? JSON.stringify(window.jsonEditorInput.getValue()) : JSON.stringify({});
 
@@ -401,11 +595,13 @@ async function postDocumentAnalysis() {
 
     const responseJson = await response.json();
     const protocol = responseJson.protocol;
-    showLoader("hide", "submitButton");
 
     return protocol;
   } catch (err) {
     showLoader("hide", "submitButton");
+    document.getElementById("resultSection").style.display = "block";
+    document.getElementById("editor_holder_output").innerHTML = "";
+  
     updateStatus(`Erro: ${err.message}`, "error");
     throw err;
   }
@@ -421,17 +617,6 @@ document.getElementById("submitButton").addEventListener("click", async function
 
     pollAnalysisStatus(protocol);
 
-    document.getElementById("result").style.display = "block";
-    const resultContainer = document.getElementById("resultContent");
-
-    // generateJSONEditor(JSON.parse(response.outcome), "editor_holder_output");
-
-    resultContainer.innerHTML = getResponseElements(
-      response.failedActions,
-      response.succeededActions,
-      response.outcomeType,
-      response.documentExtraData.replace(": ", ":\n")
-    );
   } catch (error) {
     console.error("Error in document analysis:", error);
     updateStatus(`Erro: ${error.message}`, "error");

@@ -75,11 +75,6 @@ public class DocumentDataConsistencyCheckerTest {
         String s = new ObjectMapper().writeValueAsString(y);
         new ObjectMapper().readValue(s, FieldCheckRule.class);
 
-
-
-
-
-
         List<FieldCheckRule> fieldsToCheck = new ObjectMapper().readValue(
                 "[ { \"name\": \"Nome do proprietário\", \"jsonPath\": \"$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].proprietarios[?(@.seq=={SEQ})].nome\", \"pathsToObjectKey\": { \"{MATRICULA}\": \"$.propriedadesRurais[*].numeroMatricula\", \"{SEQ}\": \"$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].proprietarios[*].seq\" }, \"expectedDataType\": \"STRING\", \"promptAdditionalInfo\": \"Ignore os filtros de pesquisa. propriedadesRurais e proprietários são arrays\", \"action\": { \"actionType\": \"COMPARE\" } }, { \"name\": \"Área do imóvel\", \"jsonPath\": \"$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].area\", \"pathsToObjectKey\": { \"{MATRICULA}\": \"$.propriedadesRurais[*].numeroMatricula\" }, \"expectedDataType\": \"STRING\", \"promptAdditionalInfo\": \"A unidade de medida deve ser hectares quadrados. Formato: [0-9.,]+?\\\\s*?ha. propriedadesRurais é um array\", \"action\": { \"actionType\": \"COMPARE\" } } ] }",
                 new TypeReference<List<FieldCheckRule>>() {

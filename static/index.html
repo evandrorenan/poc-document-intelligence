@@ -19,19 +19,22 @@
                 <div class="form-group">
                     <label for="documentType" class="label-bold">Tipo de Documento:</label>
                     <select id="documentType" name="documentType">
+                        <option value="" disabled selected>Selecione</option>
+                        <option value="RG">RG</option>
+                        <option value="COMPROVANTE_DE_ENDERECO">Comprovante de endereço</option>
                         <option value="REGISTRO_MATRICULA">Registro de Matrícula</option>
-                        <option value="CNH">CNH</option>
                     </select>
                 </div>
 
                 <div class="form-group">
                     <label for="modelDeploymentId" class="label-bold">ID do Modelo:&nbsp;</label>
-                    <label id="modelDeploymentId" readonly aria-describedby="modelDeploymentIdHelp">Teste</label>
+                    <input type="text" id="modelDeploymentId" name="modelDeploymentId"
+                        value="document-deployment-gpt-4o" />
                 </div>
 
                 <div class="form-group">
                     <label for="promptAdditionalInfo" class="label-bold">Informações Adicionais do Prompt:&nbsp;</label>
-                    <label id="promptAdditionalInfo"></label>
+                    <textarea id="promptAdditionalInfo" name="promptAdditionalInfo">NA</textarea>
                 </div>
 
                 <div class="section">
@@ -44,6 +47,11 @@
 
                 <div class="section">
                     <h2>Dados de Referência:</h2>
+                    <span class="je-header je-object__title">
+                        <button type="button" class="json-editor-btn-collapse json-editor-btntype-toggle" onclick="loadExample()">
+                            <span>Carregar exemplo</span>
+                        </button>
+                    </span>
                     <div id="referenceDataEditor"></div>
                     <div id="editor_holder_input"></div>
                 </div>
@@ -64,10 +72,10 @@
                 <h2>Resultado da consulta:</h2>
                 <div id="resultContent"></div>
             </div>
-        </div>
 
-        <div class="section">
-            <div id="editor_holder_output"></div>
+            <div class="section">
+                <div id="editor_holder_output"></div>
+            </div>
         </div>
     </div>
     <script src="scripts.js"></script>

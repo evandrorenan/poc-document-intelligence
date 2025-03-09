@@ -13,7 +13,7 @@ public class DocumentValidationRule {
     public enum DocumentType {
         RG,
         REGISTRO_MATRICULA,
-        CAFIR
+        COMPROVANTE_DE_ENDERECO
     }
 
     private final DocumentType documentType;

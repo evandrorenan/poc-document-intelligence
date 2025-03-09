@@ -4,6 +4,7 @@ import com.example.documentintelligence.application.DocumentService;
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
 import com.example.documentintelligence.infrastructure.api.dto.DocumentSubmissionRequest;
 import com.example.documentintelligence.infrastructure.api.dto.ProtocolResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -31,6 +32,12 @@ public class DocumentController {
     })
     public ResponseEntity<ProtocolResponse> submitDocument(
             @Valid @RequestBody DocumentSubmissionRequest request) {
+
+        DocumentAnalysis cachedProtocol = documentService.getCachedProtocol(request.getDocumentValidationRule().getPromptAdditionalInfo());
+        if (cachedProtocol != null) {
+            return ResponseEntity.ok(new ProtocolResponse(cachedProtocol.getProtocol()));
+        }
+
         String protocol = documentService.submitDocument(request);
         return ResponseEntity.ok(new ProtocolResponse(protocol));
     }
@@ -40,7 +47,7 @@ public class DocumentController {
             description = "Retrieves the analysis results for a given protocol. The analysis may be in one of three states: " +
                     "PENDING (still processing), COMPLETED (analysis finished successfully), or FAILED (analysis encountered an error).")
     @ApiResponses(value = {
-            @ApiResponse(responseCode =     "200", description = "Analysis results retrieved successfully"),
+            @ApiResponse(responseCode = "200", description = "Analysis results retrieved successfully"),
             @ApiResponse(responseCode = "404", description = "Protocol not found")
     })
     public ResponseEntity<DocumentAnalysis> getAnalysisResult(

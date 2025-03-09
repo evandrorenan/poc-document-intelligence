@@ -61,4 +61,18 @@ public class DocumentService {
         log.debug("Found analysis result. Status: {}, Type: {}", result.getStatus(), result.getDocumentValidationRule());
         return result;
     }
+
+    public DocumentAnalysis getCachedProtocol(String protocol) {
+        log.debug("Looking for cached protocol: {}", protocol);
+        if (protocol == null) {
+            return null;
+        }
+        var result = documentRepository.findByProtocol(protocol);
+        if (result.isPresent() && result.get().getStatus().equals(AnalysisStatus.COMPLETED)) {
+            log.info("Returning cached response");
+            return result.get();
+        }
+        log.debug("Cached version not found");
+        return null;
+    }
 }
