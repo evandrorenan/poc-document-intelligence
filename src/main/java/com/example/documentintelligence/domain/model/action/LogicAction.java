@@ -59,6 +59,10 @@ public class LogicAction extends Action {
     }
 
     @Override
+    public ActionResult execute(List<String> referencePaths, List<String> documentPaths, String referenceData, String documentData) {
+        return null;
+    }
+
     public ActionResult execute(DocumentAnalysis documentAnalysis) {
 
         ActionResult actionResult = new ActionResult();

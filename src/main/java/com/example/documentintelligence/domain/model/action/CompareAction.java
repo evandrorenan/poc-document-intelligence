@@ -24,8 +24,8 @@ public class CompareAction extends Action {
     private static final String MATCH = "MATCH";
     private static final String ONLY_ON_REFERENCE = "ONLY_ON_REFERENCE";
     private static final String ONLY_ON_DOCUMENT = "ONLY_ON_DOCUMENT";
-    private static final String ERROR_MISMATCH = "Informacao divergente do documento comprobatorio.";
-    private static final String ERROR_NOT_FOUND = "Informacao nao encontrada no documento comprobatorio";
+    private static final String ERROR_MISMATCH = "Informação divergente do documento comprobatório: ";
+    private static final String ERROR_NOT_FOUND = "Informação não encontrada no documento comprobatório.";
 
     private final ActionType actionType = ActionType.COMPARE;
 
@@ -40,62 +40,36 @@ public class CompareAction extends Action {
     }
 
     @Override
-    public ActionResult execute(DocumentAnalysis documentAnalysis) {
+    public ActionResult execute(List<String> referencePaths, List<String> documentPaths, String referenceData, String documentData) {
         ActionResult actionResult = new ActionResult();
         actionResult.setDocumentExtraData(new ArrayList<>());
-
-        Map<String, Object> validationResults = getValidationResults(documentAnalysis);
-
-        if (validationResults.isEmpty()) {
-            return handleEmptyValidationResults(actionResult);
-        }
-
-        List<String> referencePaths = (List<String>) validationResults.get(REFERENCE_PATHS);
-        List<String> documentPaths = (List<String>) validationResults.get(DOCUMENT_PATHS);
+        actionResult.setOutcome(referenceData);
 
         Map<String, List<String>> pathComparison = comparePaths(referencePaths, documentPaths);
 
-        String referenceData = documentAnalysis.getReferenceData();
-        String documentData = (String) documentAnalysis.getStepResults().getOrDefault(AZURE_OPENAI_ANALYZER, "");
-
-        actionResult.setOutcome(referenceData);
-
         int pathErrors = validateMatchingPaths(pathComparison.get(MATCH), documentData, actionResult);
+
+        return buildActionResult(documentData, actionResult, pathComparison, pathErrors);
+    }
+
+    private ActionResult buildActionResult(String documentData, ActionResult actionResult, Map<String, List<String>> pathComparison, int pathErrors) {
         int contentErrors = addErrorsToReferenceData(pathComparison.get(ONLY_ON_REFERENCE), ERROR_NOT_FOUND, actionResult);
         contentErrors += pathComparison.get(ONLY_ON_DOCUMENT).stream()
-                                       .map(p -> {
-                                       List<String> onlyOnDocument = JsonPath.using(config).parse(documentData).read(p, List.class);
-                                       if (onlyOnDocument.isEmpty()) return Collections.emptyList();
-
-                                       actionResult.getDocumentExtraData().add(p + ": " + onlyOnDocument.get(0));
-                                       return onlyOnDocument;
-                                   })
+                                       .map(p -> onlyOnDocumentContent(documentData, actionResult, p))
                                        .filter(item -> !item.isEmpty())
                                        .count();
 
         setActionResult(actionResult, pathComparison, pathErrors, contentErrors);
 
-        documentAnalysis.getStepResults().put(IMPORTED_DATA_ACTION_EXECUTOR, actionResult);
-
         return actionResult;
     }
 
-    private Map<String, Object> getValidationResults(DocumentAnalysis documentAnalysis) {
-        var validationResults = documentAnalysis.getStepResults().getOrDefault(
-                VALIDATE_FIELD_CONTENT_ANALYZER, Collections.emptyMap());
+    private static List<?> onlyOnDocumentContent(String documentData, ActionResult actionResult, String p) {
+        List<String> onlyOnDocument = JsonPath.using(config).parse(documentData).read(p, List.class);
+        if (onlyOnDocument.isEmpty()) return Collections.emptyList();
 
-        if (!(validationResults instanceof Map<?, ?>)) {
-            log.warn("Validation step didn't produce a valid Map");
-            return Collections.emptyMap();
-        }
-
-        return (Map<String, Object>) validationResults;
-    }
-
-    private ActionResult handleEmptyValidationResults(ActionResult actionResult) {
-        log.warn("Validation step produced invalid results");
-        actionResult.setOutcomeType(FAILURE);
-        return actionResult;
+        actionResult.getDocumentExtraData().add(p + ": " + onlyOnDocument.get(0));
+        return onlyOnDocument;
     }
 
 
@@ -140,7 +114,7 @@ public class CompareAction extends Action {
             }
 
             if (!String.valueOf(refValues.get(0)).equalsIgnoreCase(String.valueOf(docValues.get(0)))) {
-                referenceData = addErrorToReferenceData(path, ERROR_MISMATCH, actionResult);
+                referenceData = addErrorToReferenceData(path, ERROR_MISMATCH + docValues.get(0), actionResult);
                 actionResult.setOutcome(referenceData);
                 return 1;
             }

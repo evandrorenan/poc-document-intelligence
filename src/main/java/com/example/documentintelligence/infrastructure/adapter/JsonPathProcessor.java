@@ -16,6 +16,7 @@ public class JsonPathProcessor {
 
     private static final String TOKEN_REGEX = "\\{[^#]+}";
     private static final int MAX_RECURSION_DEPTH = 100;
+    private static final String IMPOSSIBLE_VALUE = "\\u0000\\u0001\\u0002\\u0003\\u0004\\u0005\\u0006\\u0007";
     private final ReentrantLock lock = new ReentrantLock();
 
     public static final Configuration config = Configuration.builder()
@@ -77,6 +78,11 @@ public class JsonPathProcessor {
                 List<String> extractedValues = extractValuesFromJson(entry.getValue(), documentData, expandedPaths);
                 if (!extractedValues.isEmpty()) {
                     expandedPaths.put(entry.getKey(), extractedValues);
+                    unresolvedPaths.remove(entry.getKey());
+                    continue;
+                }
+                if (depth == MAX_RECURSION_DEPTH) {
+                    expandedPaths.put(entry.getKey(), List.of(IMPOSSIBLE_VALUE));
                     unresolvedPaths.remove(entry.getKey());
                 }
             }

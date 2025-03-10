@@ -22,14 +22,14 @@ class CompareActionTest {
 
     @Test
     void getActionType_ShouldReturnCompare() {
-        assertEquals(Action.ActionType.COMPARE, new CompareAction().getActionType());
+        assertEquals(Action.ActionType.COMPARE, new CompareAction(context).getActionType());
     }
 
     @Test
     void execute_ShouldReturnFailure_WhenValidationResultsAreInvalid() {
         DocumentAnalysis documentAnalysis = mock(DocumentAnalysis.class);
         when(documentAnalysis.getStepResults()).thenReturn(Map.of(VALIDATE_FIELD_CONTENT_ANALYZER, "invalid"));
-        ActionResult result = new CompareAction().execute(documentAnalysis);
+        ActionResult result = new CompareAction(context).execute(documentAnalysis);
         assertEquals(ActionResult.ActionOutcomeType.FAILURE, result.getOutcomeType());
     }
 
@@ -37,7 +37,7 @@ class CompareActionTest {
     void execute_ShouldHandleEmptyValidationResults() {
         DocumentAnalysis documentAnalysis = mock(DocumentAnalysis.class);
         when(documentAnalysis.getStepResults()).thenReturn(Map.of(VALIDATE_FIELD_CONTENT_ANALYZER, Map.of()));
-        ActionResult result = new CompareAction().execute(documentAnalysis);
+        ActionResult result = new CompareAction(context).execute(documentAnalysis);
         assertEquals(ActionResult.ActionOutcomeType.FAILURE, result.getOutcomeType());
     }
 
@@ -54,7 +54,7 @@ class CompareActionTest {
                 AZURE_OPENAI_ANALYZER, "{\"field1\": \"value1\", \"field3\": \"value3\"}"));
         when(documentAnalysis.getReferenceData()).thenReturn("{\"field1\": \"value1\", \"field2\": \"value2\"}");
 
-        ActionResult result = new CompareAction().execute(documentAnalysis);
+        ActionResult result = new CompareAction(context).execute(documentAnalysis);
         assertNotNull(result);
         assertEquals(ActionResult.ActionOutcomeType.PARTIAL_SUCCESS, result.getOutcomeType());
     }
@@ -72,7 +72,7 @@ class CompareActionTest {
                 AZURE_OPENAI_ANALYZER, "{\"field1\": \"value1\"}"));
         when(documentAnalysis.getReferenceData()).thenReturn("{\"field1\": \"value1\"}");
 
-        ActionResult result = new CompareAction().execute(documentAnalysis);
+        ActionResult result = new CompareAction(context).execute(documentAnalysis);
         assertNotNull(result);
         assertEquals(ActionResult.ActionOutcomeType.SUCCESS, result.getOutcomeType());
     }
@@ -91,7 +91,7 @@ class CompareActionTest {
 
         when(documentAnalysis.getReferenceData()).thenReturn("{\"field1\": \"value1\"}");
 
-        ActionResult result = new CompareAction().execute(documentAnalysis);
+        ActionResult result = new CompareAction(context).execute(documentAnalysis);
         assertNotNull(result);
         assertEquals(ActionResult.ActionOutcomeType.PARTIAL_SUCCESS, result.getOutcomeType());
     }

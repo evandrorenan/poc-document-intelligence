@@ -50,7 +50,7 @@ const documentTypeValues = {
     fieldsToCheck: [
       {
         name: "Órgão emissor do documento",
-        jsonPath: "$.dadosCadastraisCliente.documentosIdentificacao[?(@.numeroDocumento=={NUMERO_DOCUMENTO})].orgaoEmissor",
+        jsonPath: "$.dadosCadastraisCliente.documentosIdentificacao[?(@.numeroDocumento=='{NUMERO_DOCUMENTO}')].orgaoEmissor",
         pathsToObjectKey: [
           { key: "{NUMERO_DOCUMENTO}", value: "$.dadosCadastraisCliente.documentosIdentificacao[*].numeroDocumento" }
         ],
@@ -60,7 +60,7 @@ const documentTypeValues = {
       },
       {
         name: "UF de emissão do documento",
-        jsonPath: "$.dadosCadastraisCliente.documentosIdentificacao[?(@.numeroDocumento=={NUMERO_DOCUMENTO})].ufEmissao",
+        jsonPath: "$.dadosCadastraisCliente.documentosIdentificacao[?(@.numeroDocumento=='{NUMERO_DOCUMENTO}')].ufEmissao",
         pathsToObjectKey: [
           { key: "{NUMERO_DOCUMENTO}", value: "$.dadosCadastraisCliente.documentosIdentificacao[*].numeroDocumento" }
         ],
@@ -174,7 +174,7 @@ const documentTypeValues = {
         ],
         expectedDataType: "STRING",
         promptAdditionalInfo: "A unidade de medida deve ser hectares quadrados. Formato: [0-9.,]+?\\s{1}ha. propriedadesRurais é um array.",
-        actionType: "COMPARE"
+        actionType: "OVERRIDE"
       },
       {
         name: "Nome do imóvel",
@@ -184,67 +184,7 @@ const documentTypeValues = {
         ],
         expectedDataType: "STRING",
         promptAdditionalInfo: "Algumas propriedades rurais podem ter seu nome declarado na matrícula. Caso não encontre, retorne esse campo com valor vazio. propriedadesRurais é um array",
-        actionType: "COMPARE"
-      },
-      {
-        name: "Cep do endereço",
-        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.numeroCEP",
-        pathsToObjectKey: [
-          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
-        ],
-        expectedDataType: "STRING",
-        promptAdditionalInfo: "O CEP possui 8 caracteres numéricos. Não utilize formatações. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno.",
-        actionType: "COMPARE"
-      },
-      {
-        name: "Logradouro do endereço",
-        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.logradouro",
-        pathsToObjectKey: [
-          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
-        ],
-        expectedDataType: "STRING",
-        promptAdditionalInfo: "endereco é um array.  Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno.",
-        actionType: "COMPARE"
-      },
-      {
-        name: "Numero do endereço",
-        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.numero",
-        pathsToObjectKey: [
-          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
-        ],
-        expectedDataType: "STRING",
-        promptAdditionalInfo: "endereco é um array.  Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno. Não inclua aqui dados complementares como bloco, torre, andar, sala, casa, fundos, etc.",
-        actionType: "COMPARE"
-      },
-      {
-        name: "Complemento do endereço",
-        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.complemento",
-        pathsToObjectKey: [
-          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
-        ],
-        expectedDataType: "STRING",
-        promptAdditionalInfo: "endereco é um array. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null. Inclua aqui dados complementares como bloco, torre, andar, sala, casa, fundos, etc.",
-        actionType: "COMPARE"
-      },
-      {
-        name: "Município do endereço",
-        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.municipio",
-        pathsToObjectKey: [
-          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
-        ],
-        expectedDataType: "STRING",
-        promptAdditionalInfo: "endereco é um array. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null.",
-        actionType: "COMPARE"
-      },
-      {
-        name: "UF do endereço",
-        jsonPath: "$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].endereco.uf",
-        pathsToObjectKey: [
-          { key: "{MATRICULA}", value: "$.propriedadesRurais[*].numeroMatricula" }
-        ],
-        expectedDataType: "STRING",
-        promptAdditionalInfo: "endereco é um array. Não confunda o endereço de pessoas listadas no documento com o endereço do imóvel de registro. Se essa informação não for encontrada, não inclua esse dado no json de retorno - não inclua no json de retorno, nem mesmo com conteúdo null.",
-        actionType: "COMPARE"
+        actionType: "OVERRIDE"
       }
     ]
   },
