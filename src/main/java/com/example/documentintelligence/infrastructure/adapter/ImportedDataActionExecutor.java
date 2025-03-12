@@ -2,10 +2,12 @@ package com.example.documentintelligence.infrastructure.adapter;
 
 import com.example.documentintelligence.domain.model.DocumentAnalysis;
 import com.example.documentintelligence.domain.model.FieldCheckRule;
-import com.example.documentintelligence.domain.model.action.*;
+import com.example.documentintelligence.domain.model.action.Action;
+import com.example.documentintelligence.domain.model.action.ActionResult;
 import com.example.documentintelligence.domain.port.DocumentAnalyzerPort;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
@@ -17,6 +19,7 @@ import static com.example.documentintelligence.domain.workflow.AnalyzerQualifier
 import static com.example.documentintelligence.infrastructure.adapter.DocumentDataConsistencyChecker.DOCUMENT_PATHS;
 import static com.example.documentintelligence.infrastructure.adapter.DocumentDataConsistencyChecker.REFERENCE_PATHS;
 
+@Slf4j
 @Component
 @Qualifier(IMPORTED_DATA_ACTION_EXECUTOR)
 public class ImportedDataActionExecutor implements DocumentAnalyzerPort {
@@ -41,16 +44,18 @@ public class ImportedDataActionExecutor implements DocumentAnalyzerPort {
         if (!(pathsFullMapObj instanceof Map<?, ?>)) {
             throw new IllegalStateException("Step result has an invalid type: " + pathsFullMapObj.getClass().toString());
         }
-        var pathsFullMap = (Map<String, Map<FieldCheckRule, List<String>>>) pathsFullMapObj;
+        var pathsFullMap = (Map<String, Map<String, List<String>>>) pathsFullMapObj;
 
         List<ActionResult> actionResults = new ArrayList<>();
         this.actions.forEach(action -> {
-            List<String> referencePaths = actionPaths(action, pathsFullMap.get(REFERENCE_PATHS));
-            List<String> documentPaths = actionPaths(action, pathsFullMap.get(DOCUMENT_PATHS));
+            log.info("Starting action {}", action.getClass().getSimpleName());
+            List<String> referencePaths = actionPaths(currentAnalysis, action, pathsFullMap.get(REFERENCE_PATHS));
+            List<String> documentPaths = actionPaths(currentAnalysis, action, pathsFullMap.get(DOCUMENT_PATHS));
             String documentData = (String) currentAnalysis.getStepResults().getOrDefault(AZURE_OPENAI_ANALYZER, "");
 
             ActionResult result = action.execute(referencePaths, documentPaths, currentAnalysis.getReferenceData(), documentData);
 
+            log.info("Action {} result: {}", action.getClass().getSimpleName(), result.getOutcome());
             actionResults.add(result);
         });
 
@@ -164,13 +169,15 @@ public class ImportedDataActionExecutor implements DocumentAnalyzerPort {
         return PARTIAL_SUCCESS;
     }
 
-    private static List<String> actionPaths(Action action, Map<FieldCheckRule, List<String>> fieldsMap) {
-        List<String> referencePaths = new ArrayList<>();
-        fieldsMap.keySet().forEach(fieldCheckRule -> {
-            if (fieldCheckRule.getAction().getClass().equals(action.getClass())) {
-                referencePaths.addAll(fieldsMap.get(fieldCheckRule));
-            }
-        });
-        return referencePaths;
+    private static List<String> actionPaths(
+            DocumentAnalysis documentAnalysis, Action action, Map<String, List<String>> fieldsMap) {
+        List<FieldCheckRule> fieldsToCheck = documentAnalysis.getDocumentValidationRule().getFieldsToCheck();
+
+        return fieldsMap.entrySet().stream()
+            .filter(entry -> fieldsToCheck.stream()
+                .anyMatch(field -> field.getJsonPath().equalsIgnoreCase(entry.getKey())
+                       && field.getAction().getActionType().equals(action.getActionType())))
+            .flatMap(entry -> entry.getValue().stream())
+            .toList();
     }
 }

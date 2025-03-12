@@ -69,7 +69,7 @@ public class DocumentDataConsistencyCheckerTest {
                 .pathsToObjectKey(new ObjectMapper().readValue("{ \"{MATRICULA}\": \"$.propriedadesRurais[*].numeroMatricula\", \"{SEQ}\": \"$.propriedadesRurais[?(@.numeroMatricula=={MATRICULA})].proprietarios[*].seq\" }", java.util.HashMap.class))
                 .expectedDataType(STRING)
                 .promptAdditionalInfo("")
-                .action(new CompareAction(context))
+                .action(new CompareAction())
                 .build();
 
         String s = new ObjectMapper().writeValueAsString(y);

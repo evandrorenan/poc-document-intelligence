@@ -1,10 +1,13 @@
 package com.example.documentintelligence.domain.model;
 
 import com.example.documentintelligence.domain.workflow.DocumentProcessingState;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonPOJOBuilder;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Builder;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -18,7 +21,11 @@ import java.util.Map;
  */
 @Data
 @Builder
+@JsonDeserialize(builder = DocumentAnalysis.DocumentAnalysisBuilder.class)
 public class DocumentAnalysis {
+
+    @JsonPOJOBuilder(withPrefix = "")
+    public static class DocumentAnalysisBuilder {}
     
     @NotBlank(message = "Protocol is required")
     private String protocol;

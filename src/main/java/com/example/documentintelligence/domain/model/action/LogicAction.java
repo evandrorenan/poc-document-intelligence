@@ -19,7 +19,7 @@ import static com.example.documentintelligence.domain.workflow.AnalyzerQualifier
 import static com.example.documentintelligence.domain.workflow.AnalyzerQualifiers.VALIDATE_FIELD_CONTENT_ANALYZER;
 
 @Slf4j
-@Component
+// @Component
 public class LogicAction extends Action {
 
     private final OpenAIClient client;

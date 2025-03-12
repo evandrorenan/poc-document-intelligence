@@ -36,10 +36,10 @@ public class DocumentDataConsistencyChecker implements DocumentAnalyzerPort {
                        .put(VALIDATE_FIELD_CONTENT_ANALYZER,
                                pathsMap);
 
-        Map<FieldCheckRule, List<String>> referencePathsMap = expandPathsToMap(currentAnalysis, referenceData);
-        Map<FieldCheckRule, List<String>> documentPathsMap = expandPathsToMap(currentAnalysis, documentData);
+        Map<String, List<String>> referencePathsMap = expandPathsToMap(currentAnalysis, referenceData);
+        Map<String, List<String>> documentPathsMap = expandPathsToMap(currentAnalysis, documentData);
 
-        Map<String, Map<FieldCheckRule, List<String>>> pathsFullMap = Map.of(REFERENCE_PATHS, referencePathsMap, DOCUMENT_PATHS, documentPathsMap);
+        Map<String, Map<String, List<String>>> pathsFullMap = Map.of(REFERENCE_PATHS, referencePathsMap, DOCUMENT_PATHS, documentPathsMap);
 
         currentAnalysis.getStepResults()
                        .put(VALIDATE_FIELD_CONTENT_ANALYZER + "Map",
@@ -61,11 +61,11 @@ public class DocumentDataConsistencyChecker implements DocumentAnalyzerPort {
         }
     }
 
-    private static Map<FieldCheckRule, List<String>> expandPathsToMap(DocumentAnalysis currentAnalysis, String referenceData) {
-        Map<FieldCheckRule, List<String>> fieldCheckRuleListMap =
+    private static Map<String, List<String>> expandPathsToMap(DocumentAnalysis currentAnalysis, String referenceData) {
+        Map<String, List<String>> fieldCheckRuleListMap =
             currentAnalysis.getDocumentValidationRule().getFieldsToCheck().stream()
                .collect(Collectors.toMap(
-                   fieldCheckRule -> fieldCheckRule,
+                   fieldCheckRule -> fieldCheckRule.getJsonPath(),
                    fieldCheckRule -> {
                        Map<String, String> pendingPaths = new LinkedHashMap<>(fieldCheckRule.getPathsToObjectKey());
                        return JsonPathProcessor.replacePendingTokens(fieldCheckRule.getJsonPath(), referenceData, pendingPaths);

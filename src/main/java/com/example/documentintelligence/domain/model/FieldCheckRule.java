@@ -1,6 +1,8 @@
 package com.example.documentintelligence.domain.model;
 
 import com.example.documentintelligence.domain.model.action.Action;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
